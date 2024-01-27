@@ -10,30 +10,33 @@ import numpy as np
 
 class TestUav(unittest.TestCase):
     def setUp(self) -> None:
-        # self.client = p.connect(p.DIRECT)  # or p.DIRECT for non-graphical version
-        self.client = p.connect(p.GUI)  # or p.DIRECT for non-graphical version
-        for i in [
-            p.COV_ENABLE_RGB_BUFFER_PREVIEW,
-            p.COV_ENABLE_DEPTH_BUFFER_PREVIEW,
-            p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW,
-        ]:
-            p.configureDebugVisualizer(i, 0, physicsClientId=self.client)
-        p.resetDebugVisualizerCamera(
-            cameraDistance=3,
-            cameraYaw=-30,
-            cameraPitch=-30,
-            cameraTargetPosition=[0, 0, 0],
-            physicsClientId=self.client,
-        )
-        ret = p.getDebugVisualizerCamera(physicsClientId=self.client)
-        print("viewMatrix", ret[2])
-        print("projectionMatrix", ret[3])
-        # ### Add input sliders to the GUI ##########################
-        # self.SLIDERS = -1*np.ones(4)
-        # for i in range(4):
-        # self.SLIDERS[i] = p.addUserDebugParameter("Propeller "+str(i)+" RPM", 0, self.MAX_RPM, self.HOVER_RPM, physicsClientId=self.client)
-        # self.INPUT_SWITCH = p.addUserDebugParameter("Use GUI RPM", 9999, -1, 0, physicsClientId=self.client)
+        use_gui = False
+        if use_gui:
+            self.client = p.connect(p.GUI)  # or p.DIRECT for non-graphical version
+            for i in [
+                p.COV_ENABLE_RGB_BUFFER_PREVIEW,
+                p.COV_ENABLE_DEPTH_BUFFER_PREVIEW,
+                p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW,
+            ]:
+                p.configureDebugVisualizer(i, 0, physicsClientId=self.client)
+            p.resetDebugVisualizerCamera(
+                cameraDistance=3,
+                cameraYaw=-30,
+                cameraPitch=-30,
+                cameraTargetPosition=[0, 0, 0],
+                physicsClientId=self.client,
+            )
+            ret = p.getDebugVisualizerCamera(physicsClientId=self.client)
+            print("viewMatrix", ret[2])
+            print("projectionMatrix", ret[3])
+            # # ### Add input sliders to the GUI ##########################
+            # # self.SLIDERS = -1*np.ones(4)
+            # # for i in range(4):
+            # # self.SLIDERS[i] = p.addUserDebugParameter("Propeller "+str(i)+" RPM", 0, self.MAX_RPM, self.HOVER_RPM, physicsClientId=self.client)
+            # # self.INPUT_SWITCH = p.addUserDebugParameter("Use GUI RPM", 9999, -1, 0, physicsClientId=self.client)
 
+        else:
+            self.client = p.connect(p.DIRECT)  # or p.DIRECT for non-graphical version
         p.setAdditionalSearchPath(pybullet_data.getDataPath())  # optionally
         p.setGravity(0, 0, -9.81)
         self.planeId = p.loadURDF("plane.urdf")
@@ -41,7 +44,7 @@ class TestUav(unittest.TestCase):
     def tearDown(self) -> None:
         p.disconnect()
 
-    @unittest.skip
+    # @unittest.skip
     def test_init_uav(self):
         start_pos = [0, 0, 1]
         start_rpy = [0, 0, 0]
@@ -51,7 +54,7 @@ class TestUav(unittest.TestCase):
         p.stepSimulation()
         print(self.uav.state)
 
-    @unittest.skip
+    # @unittest.skip
     def test_uav_hover_rpm(self):
         uav_des_traj = []
         uav_trajectory = []
@@ -61,12 +64,12 @@ class TestUav(unittest.TestCase):
         self.uav = Uav(
             start_pos, start_rpy, client=self.client, ctrl_type=UavCtrlType.RPM
         )
-        hover_rpms = self.uav.hover_rpm
+        rpms_des = np.zeros(4)
 
         des_pos = self.uav.state.copy()
 
-        for i in range(10 * 240):
-            self.uav.step(hover_rpms)
+        for i in range(2 * 240):
+            self.uav.step(rpms_des)
             p.stepSimulation()
 
             uav_des_traj.append(des_pos.copy())
@@ -77,7 +80,7 @@ class TestUav(unittest.TestCase):
 
         plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
 
-    @unittest.skip
+    # @unittest.skip
     def test_uav_hover_vel(self):
         des_vel = np.zeros(3)
         self.uav = Uav(
@@ -100,7 +103,7 @@ class TestUav(unittest.TestCase):
 
         plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
 
-    @unittest.skip
+    # @unittest.skip
     def test_uav_vel_tracking(self):
         self.uav = Uav(
             [3, 2, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
@@ -111,13 +114,31 @@ class TestUav(unittest.TestCase):
 
         for i in range(10 * 240):
             des_pos = self.uav.state.copy()
-            if i < 2 * 240:
+            if i < 1 * 240:
                 pass
-            elif i >= 2 * 240 and i < 6 * 240:
-                des_pos[10:13] = np.array([0, 0, 1])
+            elif i >= 1 * 240 and i < 2 * 240:
+                des_pos[10:13] = np.array([0, 0, 1.0])
 
-            elif i >= 6 * 240:
-                des_pos[10:13] = np.array([1, 0, 0])
+            elif i >= 2 * 240 and i < 3 * 240:
+                des_pos[10:13] = np.array([0, 1.0, 0])
+
+            elif i >= 3 * 240 and i < 4 * 240:
+                des_pos[10:13] = np.array([1.0, 0, 0])
+
+            elif i >= 4 * 240 and i < 5 * 240:
+                des_pos[10:13] = np.array([1.0, 1.0, 1.0])
+
+            elif i >= 6 * 240 and i < 7 * 240:
+                des_pos[10:13] = np.array([-1.0, 0.0, 0.0])
+
+            elif i >= 7 * 240 and i < 8 * 240:
+                des_pos[10:13] = np.array([0.0, -0.5, 0.0])
+
+            elif i >= 8 * 240 and i < 9 * 240:
+                des_pos[10:13] = np.array([0.0, 0.0, -0.5])
+
+            elif i >= 9 * 240:
+                des_pos[10:13] = np.array([0, 0, 0])
 
             self.uav.step(des_pos[10:13])
             p.stepSimulation()

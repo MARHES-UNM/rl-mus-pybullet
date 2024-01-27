@@ -199,6 +199,7 @@ class Uav(Entity):
             + np.multiply(self.ki_tor, self.integral_rpy_e)
             + np.multiply(self.kd_tor, ang_vel_e)
         )
+
         torques_des = np.clip(torques_des, -3200, 3200)
         pwm = thrust_des + np.dot(self.mixin_matrix, torques_des)
         pwm = np.clip(pwm, self.min_pwm, self.max_pwm)
@@ -260,7 +261,7 @@ class Uav(Entity):
                 vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
             )
         else:
-            rpms = action
+            rpms = np.array(self.hover_rpm * (1+0.05*action))
 
         rpms_sq = np.square(rpms)
         forces = rpms_sq * self.kf

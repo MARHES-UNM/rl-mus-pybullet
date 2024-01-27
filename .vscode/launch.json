@@ -11,7 +11,7 @@
             "module": "unittest",
             "justMyCode": true,
             "cwd": "${workspaceFolder}",
-            "args": ["-v", "${cwd}/tests/test_uav.py"]
+            "args": ["-v", "${cwd}/tests/test_uav.py", "--failfast"]
         },
         {
             "name": "Python: Current File",

@@ -11,6 +11,7 @@ from rl_mus_pybullet.assets import ASSET_PATH
 
 script_path = Path(__file__).parent.absolute().resolve()
 
+
 class AgentType(IntEnum):
     U = 0  # uav
     O = 1  # obstacle
@@ -23,12 +24,14 @@ class ObsType(IntEnum):
 
 
 class Uav:
-    def __init__(self, init_xyz, init_rpy, client, urdf=None, _type=AgentType.U):
+    def __init__(
+        self, init_xyz, init_rpy, client, urdf="cf2p.urdf", g=9.81, _type=AgentType.U
+    ):
         self.client = client
         self.type = _type
-        # self.urdf = urdf_file
+        self.urdf = urdf
         self.id = p.loadURDF(
-            os.path.join(ASSET_PATH, "cf2p.urdf"),
+            os.path.join(ASSET_PATH, self.urdf),
             init_xyz,
             p.getQuaternionFromEuler(init_rpy),
             flags=p.URDF_USE_INERTIA_FROM_FILE,
@@ -45,16 +48,43 @@ class Uav:
         self.rpy = p.getEulerFromQuaternion(self.quat)
         self.vel, self.ang_v = p.getBaseVelocity(self.id, physicsClientId=self.client)
 
-    def step(self):
-        raise NotImplemented()
+    def step(self, action=None):
+        kf = 3.16e-10
+        km = 7.94e-12
+        g = 9.81
+        m = 0.027
+        rpm = np.sqrt(g * m / (4 * kf))
+        forces = np.array([rpm**2] * 4) * kf
+        torques = np.array([rpm**2] * 4) * km
+
+        z_torque = -torques[0] + torques[1] - torques[2] + torques[3]
+        for i in range(4):
+            p.applyExternalForce(
+                self.id,
+                i,
+                forceObj=[0, 0, forces[i]],
+                posObj=[0, 0, 0],
+                flags=p.LINK_FRAME,
+                physicsClientId=self.client,
+            )
+        p.applyExternalTorque(
+            self.id,
+            4,
+            torqueObj=[0, 0, z_torque],
+            flags=p.LINK_FRAME,
+            physicsClientId=self.client,
+        )
+
+        self._get_kinematic()
 
     @property
     def state(self):
-        self._state = np.hstack([self.pos, self.quat, self.rpy,
-                           self.vel, self.ang_v]).reshape(-1,)
+        self._state = np.hstack(
+            [self.pos, self.quat, self.rpy, self.vel, self.ang_v]
+        ).reshape(
+            -1,
+        )
         return self._state
-
-
 
     # def in_collision(self, entity):
     #     dist = np.linalg.norm(self._state[0:3] - entity.state[0:3])

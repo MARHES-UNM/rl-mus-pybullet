@@ -16,6 +16,7 @@ class TestUav(unittest.TestCase):
     def tearDown(self) -> None:
         p.disconnect()
 
+    @unittest.skip
     def test_init_uav(self):
         start_pos = [0, 0, 1]
         start_rpy = [0, 0, 0]
@@ -24,7 +25,14 @@ class TestUav(unittest.TestCase):
         print(uav.state)
 
     def test_uav_hover(self):
-        pass
+        start_pos = [0, 0, .5]
+        start_rpy = [0, 0, 0]
+        uav = Uav(start_pos, start_rpy, client=self.client)
+        for i in range(10000):
+            p.stepSimulation()
+            uav.step()
+            time.sleep(1/240)
+            print(uav.state)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,8 @@ import unittest
 
 import pybullet as p
 import pybullet_data
-from rl_mus_pybullet.agents.uav import Entity, Uav
+from rl_mus_pybullet.agents.uav import Entity, Uav, UavCtrlType
+from rl_mus_pybullet.utils.plot_utils import plot_traj
 import time
 import numpy as np
 
@@ -39,30 +40,80 @@ class TestUav(unittest.TestCase):
     def tearDown(self) -> None:
         p.disconnect()
 
-    # @unittest.skip
+    @unittest.skip
     def test_init_uav(self):
         start_pos = [0, 0, 1]
         start_rpy = [0, 0, 0]
-        x = Entity(start_pos, start_rpy, client=self.client)
+        self.uav = Uav(
+            start_pos, start_rpy, client=self.client, ctrl_type=UavCtrlType.RPM
+        )
+        p.stepSimulation()
+        print(self.uav.state)
+
+    @unittest.skip
+    def test_uav_hover_rpm(self):
+        start_pos = [0, 0, 1]
+        start_rpy = [0, 0, 0]
+        self.uav = Uav(
+            start_pos, start_rpy, client=self.client, ctrl_type=UavCtrlType.RPM
+        )
+        hover_rpms = self.uav.hover_rpm
+
         for i in range(240):
             p.stepSimulation()
-            time.sleep(1 / 240.0)
+            self.uav.step(hover_rpms)
+            print(self.uav.state)
 
-    def test_uav_hover(self):
-        start_pos = [0, 0, 0.5]
-        start_rpy = [0, 0, 0]
-        uav = Uav(start_pos, start_rpy, client=self.client)
-        kf = 3.16e-10
-        km = 7.94e-12
-        g = 9.81
-        m = 0.027
-        rpms = np.array([np.sqrt(g * m / (4 * kf))] * 4)
+    @unittest.skip
+    def test_uav_hover_vel(self):
+        des_vel = np.zeros(3)
+        self.uav = Uav(
+            [1, 0, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
+        )
 
-        for i in range(10000):
+        des_pos = self.uav.state.copy()
+        uav_des_traj = []
+        uav_trajectory = []
+
+        for i in range(10*240):
             p.stepSimulation()
-            uav.step(rpms)
-            time.sleep(1 / 240)
-            print(uav.state)
+            # time.sleep(1 / 240.0)
+            self.uav.step(des_vel)
+
+            uav_des_traj.append(des_pos.copy())
+            uav_trajectory.append(self.uav.state.copy())
+
+        uav_des_traj = np.array(uav_des_traj)
+        uav_trajectory = np.array(uav_trajectory)
+
+        plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
+
+    def test_uav_vel_tracking(self):
+        self.uav = Uav(
+            [3, 2, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
+        )
+        des_pos = self.uav.state.copy()
+        uav_des_traj = []
+        uav_trajectory = []
+
+        for i in range(40 * 240):
+            des_pos = self.uav.state.copy()
+            if i < 10 * 240:
+                pass
+            elif i >= 10 * 240 and i < 20 * 240:
+                des_pos[10:13] = np.array([0, 0, 1])
+            elif i >= 20 * 240:
+                des_pos[10:13] = np.array([1, 0, 0])
+
+            p.stepSimulation()
+            self.uav.step(des_pos[10:13])
+            uav_des_traj.append(des_pos.copy())
+            uav_trajectory.append(self.uav.state.copy())
+
+        uav_des_traj = np.array(uav_des_traj)
+        uav_trajectory = np.array(uav_trajectory)
+
+        plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
 
 
 if __name__ == "__main__":

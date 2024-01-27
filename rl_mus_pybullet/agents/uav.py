@@ -119,6 +119,7 @@ class Uav(Entity):
         self.ctrl_freq = ctrl_freq
         self.pyb_freq = pyb_freq
         self.ctrl_timestep = 1.0 / self.ctrl_freq
+        self.rpms = np.zeros(4)
         self.last_rpy = np.zeros(3)
         self.integral_pos_e = np.zeros(3)
         self.integral_rpy_e = np.zeros(3)

@@ -54,7 +54,7 @@ class TestUav(unittest.TestCase):
         p.stepSimulation()
         print(self.uav.state)
 
-    # @unittest.skip
+    @unittest.skip
     def test_uav_hover_rpm(self):
         uav_des_traj = []
         uav_trajectory = []
@@ -82,26 +82,21 @@ class TestUav(unittest.TestCase):
 
     # @unittest.skip
     def test_uav_hover_vel(self):
-        des_vel = np.zeros(3)
+        vel_des = np.zeros(3)
         self.uav = Uav(
             [1, 0, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
         )
 
-        des_pos = self.uav.state.copy()
-        uav_des_traj = []
-        uav_trajectory = []
+        plotter = Plotter()
+        plotter.add_uav(self.uav.id)
 
         for i in range(10 * 240):
-            self.uav.step(des_vel)
+            self.uav.step(vel_des)
             p.stepSimulation()
 
-            uav_des_traj.append(des_pos.copy())
-            uav_trajectory.append(self.uav.state.copy())
+            plotter.log(self.uav.id, self.uav.state, vel_des)
 
-        uav_des_traj = np.array(uav_des_traj)
-        uav_trajectory = np.array(uav_trajectory)
-
-        plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
+        plotter.plot("Test UAV Hover Velocity")
 
     # @unittest.skip
     def test_uav_vel_tracking(self):
@@ -110,76 +105,63 @@ class TestUav(unittest.TestCase):
         )
 
         plotter = Plotter()
-        des_pos = self.uav.state.copy()
-        uav_des_traj = []
-        uav_trajectory = []
+        plotter.add_uav(self.uav.id)
 
+        vel_des = np.zeros(3)
         for i in range(10 * 240):
-            des_pos = self.uav.state.copy()
             if i < 1 * 240:
                 pass
             elif i >= 1 * 240 and i < 2 * 240:
-                des_pos[10:13] = np.array([0, 0, 1.0])
+                vel_des = np.array([0, 0, 1.0])
 
             elif i >= 2 * 240 and i < 3 * 240:
-                des_pos[10:13] = np.array([0, 1.0, 0])
+                vel_des = np.array([0, 1.0, 0])
 
             elif i >= 3 * 240 and i < 4 * 240:
-                des_pos[10:13] = np.array([1.0, 0, 0])
+                vel_des = np.array([1.0, 0, 0])
 
             elif i >= 4 * 240 and i < 5 * 240:
-                des_pos[10:13] = np.array([1.0, 1.0, 1.0])
+                vel_des = np.array([1.0, 1.0, 1.0])
 
             elif i >= 6 * 240 and i < 7 * 240:
-                des_pos[10:13] = np.array([-1.0, 0.0, 0.0])
+                vel_des = np.array([-1.0, 0.0, 0.0])
 
             elif i >= 7 * 240 and i < 8 * 240:
-                des_pos[10:13] = np.array([0.0, -0.5, 0.0])
+                vel_des = np.array([0.0, -0.5, 0.0])
 
             elif i >= 8 * 240 and i < 9 * 240:
-                des_pos[10:13] = np.array([0.0, 0.0, -0.5])
+                vel_des = np.array([0.0, 0.0, -0.5])
 
             elif i >= 9 * 240:
-                des_pos[10:13] = np.array([0, 0, 0])
+                vel_des = np.array([0, 0, 0])
 
-            self.uav.step(des_pos[10:13])
+            self.uav.step(vel_des)
             p.stepSimulation()
 
-            uav_des_traj.append(des_pos.copy())
-            uav_trajectory.append(self.uav.state.copy())
+            plotter.log(self.uav.id, state=self.uav.state, ref_ctrl=vel_des)
 
-        uav_des_traj = np.array(uav_des_traj)
-        uav_trajectory = np.array(uav_trajectory)
-
-        plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
+        plotter.plot(title="Test UAV velocity control", plt_ctrl=True)
 
     def test_uav_rand_vel_tracking(self):
         self.uav = Uav(
             [0, 0, 0.5], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
         )
-        des_pos = self.uav.state.copy()
-        uav_des_traj = []
-        uav_trajectory = []
+
+        plotter = Plotter()
+        plotter.add_uav(self.uav.id)
 
         time_to_change_vel = 2 * 240  # every 2 secs
-        des_vel = np.zeros(3)
+        vel_des = np.zeros(3)
         max_vel = self.uav.vel_lim * 0.5
         for i in range(10 * 240):
-            des_pos = self.uav.state.copy()
             if i % time_to_change_vel == 0:
-                des_vel = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
+                vel_des = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
 
-            des_pos[10:13] = des_vel
-            self.uav.step(des_pos[10:13])
+            self.uav.step(vel_des)
             p.stepSimulation()
+            plotter.log(uav_id=self.uav.id, state=self.uav.state, ref_ctrl=vel_des)
 
-            uav_des_traj.append(des_pos.copy())
-            uav_trajectory.append(self.uav.state.copy())
-
-        uav_des_traj = np.array(uav_des_traj)
-        uav_trajectory = np.array(uav_trajectory)
-
-        plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
+        plotter.plot(title="Test Random Velocity Tracking", plt_ctrl=True)
 
 
 if __name__ == "__main__":

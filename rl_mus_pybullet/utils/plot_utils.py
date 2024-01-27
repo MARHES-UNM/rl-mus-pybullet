@@ -15,6 +15,11 @@ class Plotter:
         self.data = [{"ctrl": [], "state": []} for i in range(self.num_uavs)]
         self.num_time_steps = 0
         self.freq = freq
+        self.uav_counter = 0
+
+    def add_uav(self, uav_id):
+        self.uav_ids[uav_id] = self.uav_counter
+        self.uav_counter += 1
 
     def log(self, uav_id, state, ref_ctrl=None):
         array_idx = self.uav_ids[uav_id]

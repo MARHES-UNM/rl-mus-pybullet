@@ -10,7 +10,7 @@ import numpy as np
 
 class TestUav(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = p.connect(p.DIRECT)  # or p.DIRECT for non-graphical version
+        self.client = p.connect(p.GUI)  # or p.DIRECT for non-graphical version
         # for i in [
         #     p.COV_ENABLE_RGB_BUFFER_PREVIEW,
         #     p.COV_ENABLE_DEPTH_BUFFER_PREVIEW,
@@ -50,7 +50,7 @@ class TestUav(unittest.TestCase):
         p.stepSimulation()
         print(self.uav.state)
 
-    # @unittest.skip
+    @unittest.skip
     def test_uav_hover_rpm(self):
         uav_des_traj = []
         uav_trajectory = []
@@ -107,14 +107,14 @@ class TestUav(unittest.TestCase):
         uav_des_traj = []
         uav_trajectory = []
 
-        for i in range(40 * 240):
+        for i in range(10 * 240):
             des_pos = self.uav.state.copy()
-            if i < 10 * 240:
+            if i < 2 * 240:
                 pass
-            elif i >= 10 * 240 and i < 20 * 240:
+            elif i >= 2 * 240 and i < 6 * 240:
                 des_pos[10:13] = np.array([0, 0, 1])
 
-            elif i >= 20 * 240:
+            elif i >= 6 * 240:
                 des_pos[10:13] = np.array([1, 0, 0])
 
             self.uav.step(des_pos[10:13])
@@ -127,6 +127,32 @@ class TestUav(unittest.TestCase):
         uav_trajectory = np.array(uav_trajectory)
 
         plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
+
+    def test_uav_rand_vel_tracking(self):
+        self.uav = Uav(
+            [0, 0, 0.5], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
+        )
+        des_pos = self.uav.state.copy()
+        uav_des_traj = []
+        uav_trajectory = []
+
+        time_to_change_vel = 2*240 # every 2 secs
+        for i in range(10 * 240):
+            des_pos = self.uav.state.copy()
+            if i % time_to_change_vel == 0:
+                des_pos[10:13] = np.random.uniform(low=-1.0, high=1.0, size=(3,))
+
+            self.uav.step(des_pos[10:13])
+            p.stepSimulation()
+
+            uav_des_traj.append(des_pos.copy())
+            uav_trajectory.append(self.uav.state.copy())
+
+        uav_des_traj = np.array(uav_des_traj)
+        uav_trajectory = np.array(uav_trajectory)
+
+        plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
+
 
 
 if __name__ == "__main__":

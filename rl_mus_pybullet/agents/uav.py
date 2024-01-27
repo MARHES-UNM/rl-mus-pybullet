@@ -7,6 +7,7 @@ from pathlib import Path
 import pybullet as p
 import pybullet_data
 import numpy as np
+from scipy.spatial.transform import Rotation
 from rl_mus_pybullet.assets import ASSET_PATH
 
 script_path = Path(__file__).parent.absolute().resolve()
@@ -51,8 +52,13 @@ class Entity:
         self.pos, self.quat = p.getBasePositionAndOrientation(
             self.id, physicsClientId=self.client
         )
-        self.rpy = p.getEulerFromQuaternion(self.quat)
+        self.rpy = np.array(p.getEulerFromQuaternion(self.quat))
         self.vel, self.ang_v = p.getBaseVelocity(self.id, physicsClientId=self.client)
+
+        self.pos = np.array(self.pos)
+        self.quat = np.array(self.quat)
+        self.vel = np.array(self.vel)
+        self.ang_v = np.array(self.ang_v)
 
     def step(self):
         raise NotImplemented()
@@ -77,6 +83,8 @@ class Uav(Entity):
         g=9.81,
         _type=AgentType.U,
         ctrl_type=UavCtrlType.RPM,
+        pyb_freq=240,
+        ctrl_freq=240,
     ):
         super().__init__(init_xyz, init_rpy, client, urdf, g, _type)
         self.ctrl_type = ctrl_type
@@ -95,23 +103,96 @@ class Uav(Entity):
         self.dw_coeff_2 = 0.16
         self.dw_coeff_3 = -0.11
         self.g = g
+        self.gravity = self.g * self.m
+        # orig_scale = 0.03
+        self.vel_lim = 0.12 * self.max_speed_kmh * (1000 / 3600)  # 3 m/s
+        self.pwm2rpm_scale = 0.2685
+        self.pwm2rpm_const = 4070.3
+        self.min_pwm = 20000
+        self.max_pwm = 65535
+        self.kp_for = np.array([0.4, 0.4, 1.25])
+        self.kd_for = np.array([0.2, 0.2, 0.5])
+        self.kp_tor = np.array([70000.0, 70000.0, 60000.0])
+        self.kd_tor = np.array([20000.0, 20000.0, 12000.0])
+        self.ctrl_freq = ctrl_freq
+        self.pyb_freq = pyb_freq
+        self.ctrl_timestep = 1.0 / self.ctrl_freq
+        self.last_rpy = np.zeros(3)
 
         self.hover_rpm = np.array([np.sqrt(self.g * self.m / (4 * self.kf))] * 4)
+        self.mixin_matrix = np.array([[0, -1, -1], [+1, 0, 1], [0, 1, -1], [-1, 0, 1]])
 
-    def _get_kinematic(self):
-        self.pos, self.quat = p.getBasePositionAndOrientation(
-            self.id, physicsClientId=self.client
+    def compute_control(
+        self, pos_des, rpy_des, vel_des=np.zeros(3), ang_vel_des=np.zeros(3)
+    ):
+        thrust_des, comp_rpy_des = self.compute_position_control(
+            pos_des, rpy_des, vel_des
         )
-        self.rpy = p.getEulerFromQuaternion(self.quat)
-        self.vel, self.ang_v = p.getBaseVelocity(self.id, physicsClientId=self.client)
+
+        rpm = self.compute_attitude_control(thrust_des, comp_rpy_des, ang_vel_des)
+
+        return rpm
+
+    def compute_position_control(self, pos_des, rpy_des, vel_des):
+        rotation = np.array(p.getMatrixFromQuaternion(self.quat)).reshape(3, 3)
+        pos_e = pos_des - self.pos
+        vel_e = vel_des - self.vel
+
+        thrust_des = (
+            np.multiply(self.kp_for, pos_e)
+            + np.multiply(self.kd_for, vel_e)
+            + np.array([0, 0, self.gravity])
+        )
+
+        scalar_thrust = max(0.0, np.dot(thrust_des, rotation[:, 2]))
+        scalar_thrust_des = (
+            np.sqrt(scalar_thrust / (4.0 * self.kf)) - self.pwm2rpm_const
+        ) / self.pwm2rpm_scale
+
+        target_z_ax = thrust_des / np.linalg.norm(thrust_des)
+        target_x_c = np.array([np.cos(rpy_des[2]), np.sin(rpy_des[2]), 0])
+        target_y_ax = np.cross(target_z_ax, target_x_c) / np.linalg.norm(
+            np.cross(target_z_ax, target_x_c)
+        )
+        target_x_ax = np.cross(target_y_ax, target_z_ax)
+        rotation_des = (np.vstack([target_x_ax, target_y_ax, target_z_ax])).transpose()
+
+        comp_rpy_des = (Rotation.from_matrix(rotation_des)).as_euler(
+            "XYZ", degrees=False
+        )
+        if np.any(np.abs(comp_rpy_des) > np.pi):
+            print(
+                "\n[ERROR] ctrl it",
+                # self.control_counter,
+                "in Control._dslPIDPositionControl(), values outside range [-pi,pi]",
+            )
+        return scalar_thrust_des, comp_rpy_des
+
+    def compute_attitude_control(self, thrust_des, rpy_des, ang_vel_des):
+        rotation = np.array(p.getMatrixFromQuaternion(self.quat)).reshape(3, 3)
+
+        quat_des = (Rotation.from_euler("XYZ", rpy_des, degrees=False)).as_quat()
+        w, x, y, z = quat_des
+
+        rotation_des = (Rotation.from_quat([w, x, y, z])).as_matrix()
+
+        rot_matrix_e = np.dot((rotation_des.transpose()), rotation) - np.dot(
+            rotation.transpose(), rotation_des
+        )
+        rot_e = np.array([rot_matrix_e[2, 1], rot_matrix_e[0, 2], rot_matrix_e[1, 0]])
+        ang_vel_e = ang_vel_des - (self.rpy - self.last_rpy) / self.ctrl_timestep
+        self.last_rpy = self.rpy
+
+        torques_des = -np.multiply(self.kp_tor, rot_e) + np.multiply(
+            self.kd_tor, ang_vel_e
+        )
+        torques_des = np.clip(torques_des, -3200, 3200)
+        pwm = thrust_des + np.dot(self.mixin_matrix, torques_des)
+        pwm = np.clip(pwm, self.min_pwm, self.max_pwm)
+
+        return self.pwm2rpm_scale * pwm + self.pwm2rpm_const
 
     def get_rpm_from_action(self, action):
-        # self.P_COEFF_FOR = np.array([.4, .4, 1.25])
-        # self.I_COEFF_FOR = np.array([.05, .05, .05])
-        # self.D_COEFF_FOR = np.array([.2, .2, .5])
-        # self.P_COEFF_TOR = np.array([70000., 70000., 60000.])
-        # self.I_COEFF_TOR = np.array([.0, .0, 500.])
-        # self.D_COEFF_TOR = np.array([20000., 20000., 12000.])
         kdx = 0.2
         kdy = 0.2
         kdz = 0.5
@@ -119,7 +200,7 @@ class Uav(Entity):
         kp_psi = 60000.0
         kd_phi = kd_theta = 20000.0
         kd_psi = 12000.0
-        
+
         vel_err = action - self.vel
         accx_des = kdx * vel_err[0]
         accy_des = kdy * vel_err[1]
@@ -154,7 +235,17 @@ class Uav(Entity):
 
     def step(self, action=np.zeros(4)):
         if self.ctrl_type == UavCtrlType.VEL:
-            rpms = self.get_rpm_from_action(action)
+            if np.linalg.norm(action) != 0:
+                vel_unit_vector = action / np.linalg.norm(action)
+            else:
+                vel_unit_vector = np.zeros(3)
+
+            rpms = self.compute_control(
+                pos_des=self.pos,
+                rpy_des=np.array([0, 0, self.rpy[2]]),
+                vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
+            )
+            # rpms = self.get_rpm_from_action(action)
         else:
             rpms = action
 

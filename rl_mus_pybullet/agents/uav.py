@@ -119,6 +119,7 @@ class Uav(Entity):
         kp_psi = 60000.0
         kd_phi = kd_theta = 20000.0
         kd_psi = 12000.0
+        
         vel_err = action - self.vel
         accx_des = kdx * vel_err[0]
         accy_des = kdy * vel_err[1]

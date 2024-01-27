@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def plot_traj(uav_des_traj, uav_trajectory, title="", scale=240.):
-    fig, axs = plt.subplots(4,2, sharex=False, figsize=(12,10))
+    fig, axs = plt.subplots(4,2, sharex=False, figsize=(12,10), layout='constrained')
     t_axis = np.arange(uav_trajectory.shape[0]) / scale
 
     axs[0,0].plot(t_axis, uav_des_traj[:, 0])

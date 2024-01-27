@@ -104,20 +104,24 @@ class Uav(Entity):
         self.dw_coeff_3 = -0.11
         self.g = g
         self.gravity = self.g * self.m
-        # orig_scale = 0.03
-        self.vel_lim = 0.12 * self.max_speed_kmh * (1000 / 3600)  # 3 m/s
+        # orig_scale = 0.12 makes 1 m/s, default 0.03
+        self.vel_lim = 0.12 * self.max_speed_kmh * (1000 / 3600)  # 1 m/s
         self.pwm2rpm_scale = 0.2685
         self.pwm2rpm_const = 4070.3
         self.min_pwm = 20000
         self.max_pwm = 65535
         self.kp_for = np.array([0.4, 0.4, 1.25])
+        self.ki_for = np.array([0.05, 0.05, 0.05])
         self.kd_for = np.array([0.2, 0.2, 0.5])
         self.kp_tor = np.array([70000.0, 70000.0, 60000.0])
+        self.ki_tor = np.array([0.0, 0.0, 500.0])
         self.kd_tor = np.array([20000.0, 20000.0, 12000.0])
         self.ctrl_freq = ctrl_freq
         self.pyb_freq = pyb_freq
         self.ctrl_timestep = 1.0 / self.ctrl_freq
         self.last_rpy = np.zeros(3)
+        self.integral_pos_e = np.zeros(3)
+        self.integral_rpy_e = np.zeros(3)
 
         self.hover_rpm = np.array([np.sqrt(self.g * self.m / (4 * self.kf))] * 4)
         self.mixin_matrix = np.array([[0, -1, -1], [+1, 0, 1], [0, 1, -1], [-1, 0, 1]])
@@ -138,8 +142,12 @@ class Uav(Entity):
         pos_e = pos_des - self.pos
         vel_e = vel_des - self.vel
 
+        self.integral_pos_e = self.integral_pos_e + pos_e * self.ctrl_timestep
+        self.integral_pos_e = np.clip(self.integral_pos_e, -2.0, 2.0)
+        self.integral_pos_e[2] = np.clip(self.integral_pos_e[2], -0.15, 0.15)
         thrust_des = (
             np.multiply(self.kp_for, pos_e)
+            + np.multiply(self.ki_for, self.integral_pos_e)
             + np.multiply(self.kd_for, vel_e)
             + np.array([0, 0, self.gravity])
         )
@@ -182,9 +190,14 @@ class Uav(Entity):
         rot_e = np.array([rot_matrix_e[2, 1], rot_matrix_e[0, 2], rot_matrix_e[1, 0]])
         ang_vel_e = ang_vel_des - (self.rpy - self.last_rpy) / self.ctrl_timestep
         self.last_rpy = self.rpy
+        self.integral_rpy_e = self.integral_rpy_e - rot_e * self.ctrl_timestep
+        self.integral_rpy_e = np.clip(self.integral_rpy_e, -1500.0, 1500.0)
+        self.integral_rpy_e[0:2] = np.clip(self.integral_rpy_e[0:2], -1.0, 1.0)
 
-        torques_des = -np.multiply(self.kp_tor, rot_e) + np.multiply(
-            self.kd_tor, ang_vel_e
+        torques_des = (
+            - np.multiply(self.kp_tor, rot_e)
+            + np.multiply(self.ki_tor, self.integral_rpy_e)
+            + np.multiply(self.kd_tor, ang_vel_e)
         )
         torques_des = np.clip(torques_des, -3200, 3200)
         pwm = thrust_des + np.dot(self.mixin_matrix, torques_des)
@@ -193,6 +206,7 @@ class Uav(Entity):
         return self.pwm2rpm_scale * pwm + self.pwm2rpm_const
 
     def get_rpm_from_action(self, action):
+        # TODO: Need to tune this controller
         kdx = 0.2
         kdy = 0.2
         kdz = 0.5
@@ -245,7 +259,6 @@ class Uav(Entity):
                 rpy_des=np.array([0, 0, self.rpy[2]]),
                 vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
             )
-            # rpms = self.get_rpm_from_action(action)
         else:
             rpms = action
 

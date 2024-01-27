@@ -3,7 +3,7 @@ import unittest
 import pybullet as p
 import pybullet_data
 from rl_mus_pybullet.agents.uav import Entity, Uav, UavCtrlType
-from rl_mus_pybullet.utils.plot_utils import plot_traj
+from rl_mus_pybullet.utils.plot_utils import Plotter, plot_traj
 import time
 import numpy as np
 
@@ -108,6 +108,8 @@ class TestUav(unittest.TestCase):
         self.uav = Uav(
             [3, 2, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
         )
+
+        plotter = Plotter()
         des_pos = self.uav.state.copy()
         uav_des_traj = []
         uav_trajectory = []

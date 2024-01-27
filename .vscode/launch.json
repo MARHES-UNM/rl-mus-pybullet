@@ -5,13 +5,30 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Module",
+            "name": "test_uav",
             "type": "python",
             "request": "launch",
             "module": "unittest",
             "justMyCode": true,
             "cwd": "${workspaceFolder}",
-            "args": ["-v", "${cwd}/tests/test_uav.py", "--failfast"]
+            "args": [
+                "-v",
+                "${cwd}/tests/test_uav.py",
+                "--failfast"
+            ]
+        },
+        {
+            "name": "test_plotter",
+            "type": "python",
+            "request": "launch",
+            "module": "unittest",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-v",
+                "${cwd}/tests/test_plotter.py",
+                "--failfast"
+            ]
         },
         {
             "name": "Python: Current File",

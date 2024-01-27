@@ -172,7 +172,7 @@ class Uav(Entity):
             print(
                 "\n[ERROR] ctrl it",
                 # self.control_counter,
-                "in Control._dslPIDPositionControl(), values outside range [-pi,pi]",
+                "in possition control, values outside range [-pi,pi]",
             )
         return scalar_thrust_des, comp_rpy_des
 
@@ -207,6 +207,10 @@ class Uav(Entity):
         return self.pwm2rpm_scale * pwm + self.pwm2rpm_const
 
     def get_rpm_from_action(self, action):
+        """
+        The GRASP Micro-UVA testbed
+        https://ieeexplore-ieee-org.libproxy.unm.edu/stamp/stamp.jsp?tp=&arnumber=5569026 
+        """
         # TODO: Need to tune this controller
         kdx = 0.2
         kdy = 0.2
@@ -260,13 +264,17 @@ class Uav(Entity):
                 rpy_des=np.array([0, 0, self.rpy[2]]),
                 vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
             )
+        # default is RPM control
         else:
             rpms = np.array(self.hover_rpm * (1+0.05*action))
+
+        self.rpms = rpms
 
         rpms_sq = np.square(rpms)
         forces = rpms_sq * self.kf
         torques = rpms_sq * self.km
         z_torque = -torques[0] + torques[1] - torques[2] + torques[3]
+
         for i in range(4):
             p.applyExternalForce(
                 self.id,
@@ -285,3 +293,12 @@ class Uav(Entity):
         )
 
         self._get_kinematic()
+
+    @property
+    def state(self):
+        self._state = np.hstack(
+            [self.pos, self.quat, self.rpy, self.vel, self.ang_v, self.rpms]
+        ).reshape(
+            -1,
+        )
+        return self._state

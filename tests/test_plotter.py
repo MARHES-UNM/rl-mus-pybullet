@@ -31,7 +31,7 @@ class TestPlotter(unittest.TestCase):
 
         plotter.add_uav(self.uav.id)
 
-        max_vel = .5 * self.uav.vel_lim
+        max_vel = 0.5 * self.uav.vel_lim
         for i in range(2 * 240):
             ref_ctrl = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
             self.uav.step(ref_ctrl)
@@ -40,24 +40,23 @@ class TestPlotter(unittest.TestCase):
 
         plotter.plot(plt_ctrl=True)
 
-
     def test_plotter_multi_uav(self):
         plotter = Plotter(num_uavs=2)
 
-        uav_1 = Uav(
-            [0, 0, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
-        )
+        uav_1 = Uav([0, 0, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL)
 
-        uav_2 = Uav(
-            [1, 0, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
-        )
+        uav_2 = Uav([1, 0, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL)
 
         plotter.add_uav(uav_1.id)
         plotter.add_uav(uav_2.id)
 
         for i in range(2 * 240):
-            ref_ctrl1 = np.random.uniform(low=-uav_1.vel_lim, high=uav_2.vel_lim, size=(3,))
-            ref_ctrl2 = np.random.uniform(low=-uav_1.vel_lim, high=uav_2.vel_lim, size=(3,))
+            ref_ctrl1 = np.random.uniform(
+                low=-uav_1.vel_lim, high=uav_2.vel_lim, size=(3,)
+            )
+            ref_ctrl2 = np.random.uniform(
+                low=-uav_1.vel_lim, high=uav_2.vel_lim, size=(3,)
+            )
 
             uav_1.step(ref_ctrl1)
             uav_2.step(ref_ctrl2)
@@ -67,7 +66,6 @@ class TestPlotter(unittest.TestCase):
             plotter.log(uav_id=uav_2.id, ref_ctrl=ref_ctrl2, state=uav_2.state)
 
         plotter.plot()
-        
 
 
 if __name__ == "__main__":

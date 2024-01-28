@@ -22,9 +22,9 @@ class TestUav(unittest.TestCase):
                 p.configureDebugVisualizer(i, 0, physicsClientId=self.client)
             p.resetDebugVisualizerCamera(
                 cameraDistance=3,
-                cameraYaw=-30,
+                cameraYaw=-15,
                 # cameraPitch=-30,
-                cameraPitch=270,
+                cameraPitch=-45,
                 cameraTargetPosition=[0, 0, 0],
                 physicsClientId=self.client,
             )
@@ -196,7 +196,7 @@ class TestUav(unittest.TestCase):
 
         plotter.plot(title="Test Random Velocity Tracking", plt_ctrl=True)
 
-    # @unittest.skip
+    @unittest.skip
     def test_uav_circular_traj(self):
         """
         https://pressbooks.online.ucf.edu/phy2048tjb/chapter/4-4-uniform-circular-motion/
@@ -253,7 +253,6 @@ class TestUav(unittest.TestCase):
 
         plotter.plot(title="Test Circular Velocity Tracking", plt_ctrl=True)
 
-    @unittest.skip
     def test_uav_helix_vel_tracking(self):
         self.uav = Uav(
             [0, 0, 0.5], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
@@ -266,10 +265,9 @@ class TestUav(unittest.TestCase):
         circ_freq = 1.0 / (240.0 * 2.0) * 2.0 * np.pi  # hz
         circ_rad = 0.9 * 100
         for i in range(10 * 240):
-            # if i % time_to_change_vel == 0:
-            action[0] = circ_rad * -np.sin(circ_freq * i) * circ_freq
+            action[0] = circ_rad * -np.sin(circ_freq * i) * circ_freq 
             action[1] = circ_rad * np.cos(circ_freq * i) * circ_freq
-            action[2] = 0.2
+            action[2] = 0.25
 
             self.uav.step(action)
             p.stepSimulation()

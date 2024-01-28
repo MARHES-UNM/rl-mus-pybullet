@@ -7,9 +7,9 @@ from rl_mus_pybullet.agents.uav import UavCtrlType
 
 class Plotter:
     def __init__(self, num_uavs=1, ctrl_type=UavCtrlType.VEL, freq=240) -> None:
+        self.ctrl_type = ctrl_type
         self.num_uavs = num_uavs
-        self.uav_ref_ctrl = []
-        self.uav_state = []
+
         # used for converting the uav_id to array index
         self.uav_ids = {}
         self.data = [{"ctrl": [], "state": []} for i in range(self.num_uavs)]
@@ -21,7 +21,7 @@ class Plotter:
         self.uav_ids[uav_id] = self.uav_counter
         self.uav_counter += 1
 
-    def log(self, uav_id, state, ref_ctrl=None):
+    def log(self, uav_id, state, ref_ctrl):
         array_idx = self.uav_ids[uav_id]
         self.data[array_idx]["state"].append(state)
         self.data[array_idx]["ctrl"].append(ref_ctrl)
@@ -48,10 +48,10 @@ class Plotter:
         for uav_id in range(self.num_uavs):
             self.data[uav_id]["state"] = np.array(self.data[uav_id]["state"])
             self.data[uav_id]["ctrl"] = np.array(self.data[uav_id]["ctrl"])
-        col = 0
 
         self.num_time_steps = self.data[0]["state"].shape[0]
 
+        col = 0
         # x, y, z
         row = 0
         self.plot_uav_data(row, col, 0, ylabel="x (m)")
@@ -77,14 +77,6 @@ class Plotter:
         row = 2
         self.plot_uav_data(row, col, 12, ylabel="vz (m/s)")
 
-        if plt_ctrl:
-            row = 0
-            self.plot_uav_data(row, col, 0, data_type="ctrl", ylabel="vx (m/s)")
-            row = 1
-            self.plot_uav_data(row, col, 1, data_type="ctrl", ylabel="vy (m/s)")
-            row = 2
-            self.plot_uav_data(row, col, 2, data_type="ctrl", ylabel="vz (m/s)")
-
         # angular velocitys
         col = 1
         row = 3
@@ -106,6 +98,27 @@ class Plotter:
         self.plot_uav_data(row, col, 18, ylabel="RPM2")
         row = 7
         self.plot_uav_data(row, col, 19, ylabel="RPM3")
+
+        if plt_ctrl:
+            if self.ctrl_type == UavCtrlType.VEL:
+                col = 1
+                row = 0
+                self.plot_uav_data(row, col, 0, data_type="ctrl", ylabel="vx (m/s)")
+                row = 1
+                self.plot_uav_data(row, col, 1, data_type="ctrl", ylabel="vy (m/s)")
+                row = 2
+                self.plot_uav_data(row, col, 2, data_type="ctrl", ylabel="vz (m/s)")
+
+            elif self.ctrl_type == UavCtrlType.POS:
+                col = 0
+                row = 0
+                self.plot_uav_data(row, col, 0, data_type="ctrl", ylabel="x (m)")
+                row = 1
+                self.plot_uav_data(row, col, 1, data_type="ctrl", ylabel="y (m)")
+                row = 2
+                self.plot_uav_data(row, col, 2, data_type="ctrl", ylabel="z (m)")
+                row = 5
+                self.plot_uav_data(row, col, 3, data_type="ctrl", ylabel="$\psi$ (rad)")
 
         for row in range(num_rows):
             for col in range(num_cols):

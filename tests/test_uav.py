@@ -2,15 +2,16 @@ import unittest
 
 import pybullet as p
 import pybullet_data
-from rl_mus_pybullet.agents.uav import Entity, Uav, UavCtrlType
+from rl_mus_pybullet.agents.uav import Entity, Uav, UavCtrlConf, UavCtrlType
 from rl_mus_pybullet.utils.plot_utils import Plotter, plot_traj
 import time
 import numpy as np
+from rl_mus_pybullet.utils.math_utils import wrap_angle
 
 
 class TestUav(unittest.TestCase):
     def setUp(self) -> None:
-        use_gui = False
+        use_gui = True
         if use_gui:
             self.client = p.connect(p.GUI)  # or p.DIRECT for non-graphical version
             for i in [
@@ -22,13 +23,40 @@ class TestUav(unittest.TestCase):
             p.resetDebugVisualizerCamera(
                 cameraDistance=3,
                 cameraYaw=-30,
-                cameraPitch=-30,
+                # cameraPitch=-30,
+                cameraPitch=270,
                 cameraTargetPosition=[0, 0, 0],
                 physicsClientId=self.client,
             )
             ret = p.getDebugVisualizerCamera(physicsClientId=self.client)
             print("viewMatrix", ret[2])
             print("projectionMatrix", ret[3])
+
+            # axis_length = 2*self.l
+            # self.x_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
+            #                                           lineToXYZ=[axis_length, 0, 0],
+            #                                           lineColorRGB=[1, 0, 0],
+            #                                           parentObjectUniqueId=self.uav.id,
+            #                                           parentLinkIndex=-1,
+            #                                           replaceItemUniqueId=int(self.X_AX[nth_drone]),
+            #                                           physicsClientId=self.client
+            #                                           )
+            # self.y_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
+            #                                           lineToXYZ=[0, axis_length, 0],
+            #                                           lineColorRGB=[0, 1, 0],
+            #                                           parentObjectUniqueId=self.uav.id,
+            #                                           parentLinkIndex=-1,
+            #                                           replaceItemUniqueId=int(self.Y_AX[nth_drone]),
+            #                                           physicsClientId=self.client
+            #                                           )
+            # self.z_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
+            #                                           lineToXYZ=[0, 0, axis_length],
+            #                                           lineColorRGB=[0, 0, 1],
+            #                                           parentObjectUniqueId=self.uav.id,
+            #                                           parentLinkIndex=-1,
+            #                                           replaceItemUniqueId=int(self.Z_AX[nth_drone]),
+            #                                           physicsClientId=self.client
+            #                                           )
             # # ### Add input sliders to the GUI ##########################
             # # self.SLIDERS = -1*np.ones(4)
             # # for i in range(4):
@@ -44,12 +72,16 @@ class TestUav(unittest.TestCase):
     def tearDown(self) -> None:
         p.disconnect()
 
-    # @unittest.skip
+    @unittest.skip
     def test_init_uav(self):
         start_pos = [0, 0, 1]
         start_rpy = [0, 0, 0]
         self.uav = Uav(
-            start_pos, start_rpy, client=self.client, ctrl_type=UavCtrlType.RPM
+            start_pos,
+            start_rpy,
+            client=self.client,
+            ctrl_type=UavCtrlType.RPM,
+            ctrl_conf=UavCtrlConf.P,
         )
         p.stepSimulation()
         print(self.uav.state)
@@ -80,7 +112,7 @@ class TestUav(unittest.TestCase):
 
         plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
 
-    # @unittest.skip
+    @unittest.skip
     def test_uav_hover_vel(self):
         vel_des = np.zeros(3)
         self.uav = Uav(
@@ -98,7 +130,7 @@ class TestUav(unittest.TestCase):
 
         plotter.plot("Test UAV Hover Velocity")
 
-    # @unittest.skip
+    @unittest.skip
     def test_uav_vel_tracking(self):
         self.uav = Uav(
             [3, 2, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
@@ -142,6 +174,7 @@ class TestUav(unittest.TestCase):
 
         plotter.plot(title="Test UAV velocity control", plt_ctrl=True)
 
+    @unittest.skip
     def test_uav_rand_vel_tracking(self):
         self.uav = Uav(
             [0, 0, 0.5], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
@@ -162,6 +195,89 @@ class TestUav(unittest.TestCase):
             plotter.log(uav_id=self.uav.id, state=self.uav.state, ref_ctrl=vel_des)
 
         plotter.plot(title="Test Random Velocity Tracking", plt_ctrl=True)
+
+    # @unittest.skip
+    def test_uav_circular_traj(self):
+        """
+        https://pressbooks.online.ucf.edu/phy2048tjb/chapter/4-4-uniform-circular-motion/
+        """
+        self.uav = Uav(
+            [0, 0, 2], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.POS
+        )
+
+
+        axis_length = 2*self.uav.arm
+        self.x_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
+                                                    lineToXYZ=[axis_length, 0, 0],
+                                                    lineColorRGB=[1, 0, 0],
+                                                    parentObjectUniqueId=self.uav.id,
+                                                    parentLinkIndex=-1,
+                                                    replaceItemUniqueId=-1,
+                                                    physicsClientId=self.client
+                                                    )
+        self.y_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
+                                                    lineToXYZ=[0, axis_length, 0],
+                                                    lineColorRGB=[0, 1, 0],
+                                                    parentObjectUniqueId=self.uav.id,
+                                                    parentLinkIndex=-1,
+                                                    replaceItemUniqueId=-1,
+                                                    physicsClientId=self.client
+                                                    )
+        self.z_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
+                                                    lineToXYZ=[0, 0, axis_length],
+                                                    lineColorRGB=[0, 0, 1],
+                                                    parentObjectUniqueId=self.uav.id,
+                                                    parentLinkIndex=-1,
+                                                    replaceItemUniqueId=-1,
+                                                    physicsClientId=self.client
+                                                    )
+        
+        plotter = Plotter(ctrl_type=UavCtrlType.POS)
+        plotter.add_uav(self.uav.id)
+        action = np.zeros(4)
+
+        # this determines how fast to complete a circle
+        circ_freq = 1.0 / (240.0 * 2.0)  # hz
+        circ_rad = 0.5
+        for i in range(10 * 240):
+            action[0] = circ_rad * np.cos(2.0 * np.pi * circ_freq * i)
+            action[1] = circ_rad * np.sin(2.0 * np.pi * circ_freq * i)
+            action[2] = 0.9
+            action[3] = wrap_angle(180 * i * np.pi / 180 * circ_freq)
+
+            self.uav.step(action)
+            p.stepSimulation()
+            plotter.log(
+                uav_id=self.uav.id, state=self.uav.state.copy(), ref_ctrl=action.copy()
+            )
+
+        plotter.plot(title="Test Circular Velocity Tracking", plt_ctrl=True)
+
+    @unittest.skip
+    def test_uav_helix_vel_tracking(self):
+        self.uav = Uav(
+            [0, 0, 0.5], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
+        )
+
+        plotter = Plotter(ctrl_type=UavCtrlType.VEL)
+        plotter.add_uav(self.uav.id)
+        action = np.zeros(3)
+        # this determines how fast to complete a circle
+        circ_freq = 1.0 / (240.0 * 2.0) * 2.0 * np.pi  # hz
+        circ_rad = 0.9 * 100
+        for i in range(10 * 240):
+            # if i % time_to_change_vel == 0:
+            action[0] = circ_rad * -np.sin(circ_freq * i) * circ_freq
+            action[1] = circ_rad * np.cos(circ_freq * i) * circ_freq
+            action[2] = 0.2
+
+            self.uav.step(action)
+            p.stepSimulation()
+            plotter.log(
+                uav_id=self.uav.id, state=self.uav.state.copy(), ref_ctrl=action.copy()
+            )
+
+        plotter.plot(title="Test Helix Using Velocity Tracking", plt_ctrl=True)
 
 
 if __name__ == "__main__":

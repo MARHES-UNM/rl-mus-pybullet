@@ -28,6 +28,12 @@ class UavCtrlType(IntEnum):
     RPM = 0
     ACC = 1
     VEL = 2
+    POS = 3
+
+
+class UavCtrlConf(IntEnum):
+    X = 0
+    P = 1
 
 
 class Entity:
@@ -79,15 +85,30 @@ class Uav(Entity):
         init_xyz,
         init_rpy,
         client,
-        urdf="cf2p.urdf",
         g=9.81,
         _type=AgentType.U,
         ctrl_type=UavCtrlType.RPM,
-        pyb_freq=240,
-        ctrl_freq=240,
+        ctrl_conf=UavCtrlConf.X,
+        pyb_freq=240.0,
+        ctrl_freq=240.0,
     ):
-        super().__init__(init_xyz, init_rpy, client, urdf, g, _type)
+        self.ctrl_conf = ctrl_conf
         self.ctrl_type = ctrl_type
+
+        if self.ctrl_conf == UavCtrlConf.X:
+            self.mixin_matrix = np.array(
+                [[-0.5, -0.5, -1], [-0.5, 0.5, 1], [0.5, 0.5, -1], [0.5, -0.5, 1]]
+            )
+            urdf = "cf2x.urdf"
+        elif self.ctrl_conf == UavCtrlConf.P:
+            self.mixin_matrix = np.array(
+                [[0, -1, -1], [+1, 0, 1], [0, 1, -1], [-1, 0, 1]]
+            )
+            urdf = "cf2p.urdf"
+        else:
+            raise TypeError("Unknow UAV configuration.")
+
+        super().__init__(init_xyz, init_rpy, client, urdf, g, _type)
 
         self.m = 0.027
         self.arm = 0.0397
@@ -124,8 +145,7 @@ class Uav(Entity):
         self.integral_pos_e = np.zeros(3)
         self.integral_rpy_e = np.zeros(3)
 
-        self.hover_rpm = np.array([np.sqrt(self.g * self.m / (4 * self.kf))] * 4)
-        self.mixin_matrix = np.array([[0, -1, -1], [+1, 0, 1], [0, 1, -1], [-1, 0, 1]])
+        self.hover_rpm = np.array([np.sqrt((self.g * self.m) / (4 * self.kf))] * 4)
 
     def compute_control(
         self, pos_des, rpy_des, vel_des=np.zeros(3), ang_vel_des=np.zeros(3)
@@ -196,7 +216,7 @@ class Uav(Entity):
         self.integral_rpy_e[0:2] = np.clip(self.integral_rpy_e[0:2], -1.0, 1.0)
 
         torques_des = (
-            - np.multiply(self.kp_tor, rot_e)
+            -np.multiply(self.kp_tor, rot_e)
             + np.multiply(self.ki_tor, self.integral_rpy_e)
             + np.multiply(self.kd_tor, ang_vel_e)
         )
@@ -210,7 +230,7 @@ class Uav(Entity):
     def get_rpm_from_action(self, action):
         """
         The GRASP Micro-UVA testbed
-        https://ieeexplore-ieee-org.libproxy.unm.edu/stamp/stamp.jsp?tp=&arnumber=5569026 
+        https://ieeexplore.ieee.org/document/5569026
         """
         # TODO: Need to tune this controller
         kdx = 0.2
@@ -265,9 +285,14 @@ class Uav(Entity):
                 rpy_des=np.array([0, 0, self.rpy[2]]),
                 vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
             )
+        elif self.ctrl_type == UavCtrlType.POS:
+            rpms = self.compute_control(
+                pos_des=action[0:3],
+                rpy_des=np.array([0.0, 0.0, action[3]]),
+            )
         # default is RPM control
         else:
-            rpms = np.array(self.hover_rpm * (1+0.05*action))
+            rpms = np.array(self.hover_rpm * (1 + 0.05 * action))
 
         self.rpms = rpms
 

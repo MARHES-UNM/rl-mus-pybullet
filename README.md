@@ -3,7 +3,8 @@
 ## TODO:
 [ ] Create wrapper for pybullet
 [ ] Create environment for multi-agent
-[ ] 
+[ ] confirm mixin matrix
+[ ] used x configurration instead of plus configuration
 
 
 

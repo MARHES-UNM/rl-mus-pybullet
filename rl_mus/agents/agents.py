@@ -36,14 +36,23 @@ class UavCtrlConf(IntEnum):
     P = 1
 
 
-
 class Entity:
     def __init__(
-        self, init_xyz, init_rpy, client, urdf="box.urdf", g=9.81, _type=AgentType.O
+        self,
+        init_xyz,
+        init_rpy,
+        client,
+        urdf="box.urdf",
+        g=9.81,
+        _type=AgentType.O,
+        rad=0.1,
+        show_local_axis=False,
     ):
         self.client = client
         self.type = _type
         self.urdf = urdf
+        self.rad = rad
+        self.show_local_axis = show_local_axis
 
         self.id = p.loadURDF(
             self.urdf,
@@ -52,6 +61,9 @@ class Entity:
             flags=p.URDF_USE_INERTIA_FROM_FILE,
             physicsClientId=client,
         )
+
+        if self.show_local_axis:
+            self.draw_local_axis()
 
         self._get_kinematic()
 
@@ -67,6 +79,36 @@ class Entity:
         self.vel = np.array(self.vel)
         self.ang_v = np.array(self.ang_v)
 
+    def draw_local_axis(self):
+        axis_length = 2*self.rad
+        self.x_axis = p.addUserDebugLine(
+            lineFromXYZ=[0, 0, 0],
+            lineToXYZ=[axis_length, 0, 0],
+            lineColorRGB=[1, 0, 0],
+            parentObjectUniqueId=self.id,
+            parentLinkIndex=-1,
+            replaceItemUniqueId=-1,
+            physicsClientId=self.client,
+        )
+        self.y_axis = p.addUserDebugLine(
+            lineFromXYZ=[0, 0, 0],
+            lineToXYZ=[0, axis_length, 0],
+            lineColorRGB=[0, 1, 0],
+            parentObjectUniqueId=self.id,
+            parentLinkIndex=-1,
+            replaceItemUniqueId=-1,
+            physicsClientId=self.client,
+        )
+        self.z_axis = p.addUserDebugLine(
+            lineFromXYZ=[0, 0, 0],
+            lineToXYZ=[0, 0, axis_length],
+            lineColorRGB=[0, 0, 1],
+            parentObjectUniqueId=self.id,
+            parentLinkIndex=-1,
+            replaceItemUniqueId=-1,
+            physicsClientId=self.client,
+        )
+
     def step(self):
         raise NotImplemented()
 
@@ -79,13 +121,22 @@ class Entity:
         )
         return self._state
 
-class Target(Entity):
 
-    def __init__(self,init_xyz, client, g=9.81):
+class Target(Entity):
+    def __init__(self, init_xyz, client, g=9.81, rad=0.1, show_local_axis=False):
         init_rpy = [0, 0, 0]
         _type = AgentType.T
         urdf = os.path.join(ASSET_PATH, "sphere.urdf")
-        super().__init__(init_xyz, init_rpy, client=client, urdf=urdf, g=g, _type=_type)
+        super().__init__(
+            init_xyz,
+            init_rpy,
+            client=client,
+            urdf=urdf,
+            g=g,
+            _type=_type,
+            rad=rad,
+            show_local_axis=show_local_axis,
+        )
 
 
 class Uav(Entity):
@@ -96,6 +147,7 @@ class Uav(Entity):
         client,
         g=9.81,
         _type=AgentType.U,
+        show_local_axis=False,
         ctrl_type=UavCtrlType.RPM,
         ctrl_conf=UavCtrlConf.X,
         pyb_freq=240.0,
@@ -118,10 +170,13 @@ class Uav(Entity):
             raise TypeError("Unknow UAV configuration.")
 
         urdf = os.path.join(ASSET_PATH, urdf)
-        super().__init__(init_xyz, init_rpy, client, urdf, g, _type)
+        self.arm = 0.0397
+
+        super().__init__(
+            init_xyz, init_rpy, client, urdf, g, _type, rad=self.arm, show_local_axis=show_local_axis
+        )
 
         self.m = 0.027
-        self.arm = 0.0397
         self.kf = 3.16e-10
         self.km = 7.94e-12
         self.thrust2weight = 2.25

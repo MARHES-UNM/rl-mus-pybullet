@@ -44,7 +44,7 @@ class TestPlotter(unittest.TestCase):
         # p.changeVisualShape(target.id, -1, rgbaColor=[0.5, 0.25])
 
         self.uav = Uav(
-            [1,1,2], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.POS
+            [1,1,2], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.POS, show_local_axis=True
         )
         # p.changeVisualShape(self.uav.id, -1, rgbaColor=[0.8, 0.6, 0.4, 1])
 

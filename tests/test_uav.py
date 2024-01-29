@@ -206,34 +206,6 @@ class TestUav(unittest.TestCase):
             [0, 0, 2], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.POS
         )
 
-        axis_length = 2 * self.uav.arm
-        self.x_axis = p.addUserDebugLine(
-            lineFromXYZ=[0, 0, 0],
-            lineToXYZ=[axis_length, 0, 0],
-            lineColorRGB=[1, 0, 0],
-            parentObjectUniqueId=self.uav.id,
-            parentLinkIndex=-1,
-            replaceItemUniqueId=-1,
-            physicsClientId=self.client,
-        )
-        self.y_axis = p.addUserDebugLine(
-            lineFromXYZ=[0, 0, 0],
-            lineToXYZ=[0, axis_length, 0],
-            lineColorRGB=[0, 1, 0],
-            parentObjectUniqueId=self.uav.id,
-            parentLinkIndex=-1,
-            replaceItemUniqueId=-1,
-            physicsClientId=self.client,
-        )
-        self.z_axis = p.addUserDebugLine(
-            lineFromXYZ=[0, 0, 0],
-            lineToXYZ=[0, 0, axis_length],
-            lineColorRGB=[0, 0, 1],
-            parentObjectUniqueId=self.uav.id,
-            parentLinkIndex=-1,
-            replaceItemUniqueId=-1,
-            physicsClientId=self.client,
-        )
 
         plotter = Plotter(ctrl_type=UavCtrlType.POS)
         plotter.add_uav(self.uav.id)

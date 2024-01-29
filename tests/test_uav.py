@@ -11,7 +11,7 @@ from rl_mus.utils.math_utils import wrap_angle
 
 class TestUav(unittest.TestCase):
     def setUp(self) -> None:
-        use_gui = True
+        use_gui = False
         if use_gui:
             self.client = p.connect(p.GUI)  # or p.DIRECT for non-graphical version
             for i in [
@@ -65,6 +65,7 @@ class TestUav(unittest.TestCase):
 
         else:
             self.client = p.connect(p.DIRECT)  # or p.DIRECT for non-graphical version
+
         p.setAdditionalSearchPath(pybullet_data.getDataPath())  # optionally
         p.setGravity(0, 0, -9.81)
         self.planeId = p.loadURDF("plane.urdf")
@@ -72,7 +73,7 @@ class TestUav(unittest.TestCase):
     def tearDown(self) -> None:
         p.disconnect()
 
-    @unittest.skip
+    # @unittest.skip
     def test_init_uav(self):
         start_pos = [0, 0, 1]
         start_rpy = [0, 0, 0]
@@ -86,7 +87,7 @@ class TestUav(unittest.TestCase):
         p.stepSimulation()
         print(self.uav.state)
 
-    @unittest.skip
+    # @unittest.skip
     def test_uav_hover_rpm(self):
         uav_des_traj = []
         uav_trajectory = []
@@ -112,7 +113,7 @@ class TestUav(unittest.TestCase):
 
         plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
 
-    @unittest.skip
+    # @unittest.skip
     def test_uav_hover_vel(self):
         vel_des = np.zeros(3)
         self.uav = Uav(
@@ -130,7 +131,7 @@ class TestUav(unittest.TestCase):
 
         plotter.plot("Test UAV Hover Velocity")
 
-    @unittest.skip
+    # @unittest.skip
     def test_uav_vel_tracking(self):
         self.uav = Uav(
             [3, 2, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
@@ -174,7 +175,7 @@ class TestUav(unittest.TestCase):
 
         plotter.plot(title="Test UAV velocity control", plt_ctrl=True)
 
-    @unittest.skip
+    # @unittest.skip
     def test_uav_rand_vel_tracking(self):
         self.uav = Uav(
             [0, 0, 0.5], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
@@ -196,7 +197,7 @@ class TestUav(unittest.TestCase):
 
         plotter.plot(title="Test Random Velocity Tracking", plt_ctrl=True)
 
-    @unittest.skip
+    # @unittest.skip
     def test_uav_circular_traj(self):
         """
         https://pressbooks.online.ucf.edu/phy2048tjb/chapter/4-4-uniform-circular-motion/
@@ -205,33 +206,35 @@ class TestUav(unittest.TestCase):
             [0, 0, 2], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.POS
         )
 
+        axis_length = 2 * self.uav.arm
+        self.x_axis = p.addUserDebugLine(
+            lineFromXYZ=[0, 0, 0],
+            lineToXYZ=[axis_length, 0, 0],
+            lineColorRGB=[1, 0, 0],
+            parentObjectUniqueId=self.uav.id,
+            parentLinkIndex=-1,
+            replaceItemUniqueId=-1,
+            physicsClientId=self.client,
+        )
+        self.y_axis = p.addUserDebugLine(
+            lineFromXYZ=[0, 0, 0],
+            lineToXYZ=[0, axis_length, 0],
+            lineColorRGB=[0, 1, 0],
+            parentObjectUniqueId=self.uav.id,
+            parentLinkIndex=-1,
+            replaceItemUniqueId=-1,
+            physicsClientId=self.client,
+        )
+        self.z_axis = p.addUserDebugLine(
+            lineFromXYZ=[0, 0, 0],
+            lineToXYZ=[0, 0, axis_length],
+            lineColorRGB=[0, 0, 1],
+            parentObjectUniqueId=self.uav.id,
+            parentLinkIndex=-1,
+            replaceItemUniqueId=-1,
+            physicsClientId=self.client,
+        )
 
-        axis_length = 2*self.uav.arm
-        self.x_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
-                                                    lineToXYZ=[axis_length, 0, 0],
-                                                    lineColorRGB=[1, 0, 0],
-                                                    parentObjectUniqueId=self.uav.id,
-                                                    parentLinkIndex=-1,
-                                                    replaceItemUniqueId=-1,
-                                                    physicsClientId=self.client
-                                                    )
-        self.y_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
-                                                    lineToXYZ=[0, axis_length, 0],
-                                                    lineColorRGB=[0, 1, 0],
-                                                    parentObjectUniqueId=self.uav.id,
-                                                    parentLinkIndex=-1,
-                                                    replaceItemUniqueId=-1,
-                                                    physicsClientId=self.client
-                                                    )
-        self.z_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
-                                                    lineToXYZ=[0, 0, axis_length],
-                                                    lineColorRGB=[0, 0, 1],
-                                                    parentObjectUniqueId=self.uav.id,
-                                                    parentLinkIndex=-1,
-                                                    replaceItemUniqueId=-1,
-                                                    physicsClientId=self.client
-                                                    )
-        
         plotter = Plotter(ctrl_type=UavCtrlType.POS)
         plotter.add_uav(self.uav.id)
         action = np.zeros(4)
@@ -265,7 +268,7 @@ class TestUav(unittest.TestCase):
         circ_freq = 1.0 / (240.0 * 2.0) * 2.0 * np.pi  # hz
         circ_rad = 0.9 * 100
         for i in range(10 * 240):
-            action[0] = circ_rad * -np.sin(circ_freq * i) * circ_freq 
+            action[0] = circ_rad * -np.sin(circ_freq * i) * circ_freq
             action[1] = circ_rad * np.cos(circ_freq * i) * circ_freq
             action[2] = 0.25
 

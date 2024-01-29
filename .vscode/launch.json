@@ -31,6 +31,19 @@
             ]
         },
         {
+            "name": "test_rl_mus",
+            "type": "python",
+            "request": "launch",
+            "module": "unittest",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-v",
+                "${cwd}/tests/test_rl_mus.py",
+                "--failfast"
+            ]
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",

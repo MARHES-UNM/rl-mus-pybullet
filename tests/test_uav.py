@@ -2,11 +2,11 @@ import unittest
 
 import pybullet as p
 import pybullet_data
-from rl_mus_pybullet.agents.uav import Entity, Uav, UavCtrlConf, UavCtrlType
-from rl_mus_pybullet.utils.plot_utils import Plotter, plot_traj
+from rl_mus.agents.uav import Entity, Uav, UavCtrlConf, UavCtrlType
+from rl_mus.utils.plot_utils import Plotter, plot_traj
 import time
 import numpy as np
-from rl_mus_pybullet.utils.math_utils import wrap_angle
+from rl_mus.utils.math_utils import wrap_angle
 
 
 class TestUav(unittest.TestCase):

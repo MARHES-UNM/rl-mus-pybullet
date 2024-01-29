@@ -1,13 +1,11 @@
 # Reinforcement Learning for Multi-UAV System using PyBullet
 
 ## TODO:
-[ ] Create wrapper for pybullet
 [ ] Create environment for multi-agent
     use this to create the the environment
     https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/gym/pybullet_envs/bullet/cartpole_bullet.py
 [x] confirm mixin matrix
 [x] used x configurration instead of plus configuration
-[ ]
 
 
 

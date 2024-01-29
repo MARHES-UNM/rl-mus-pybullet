@@ -1,11 +1,10 @@
 import sys
 from gymnasium import spaces
 import numpy as np
+import gymnasium as gym
 from gym.utils import seeding
 from sim.agents.missile import Obstacle, UavBase, Uav, ObsType
 from sim.agents.missile import Target
-from sim.utils.gui import Gui
-from qpsolvers import solve_qp
 from scipy.integrate import odeint
 import logging
 import random
@@ -16,7 +15,7 @@ import io
 logger = logging.getLogger(__name__)
 
 
-class UavSim(MultiAgentEnv):
+class RlMus(MultiAgentEnv):
     metadata = {
         "render_modes": ["human", "rgb_array"],
         "render_fps": 30,

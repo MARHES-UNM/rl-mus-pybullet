@@ -7,7 +7,7 @@ import pybullet as p
 import pybullet_data
 import numpy as np
 from scipy.spatial.transform import Rotation
-from rl_mus_pybullet.assets import ASSET_PATH
+from rl_mus.assets import ASSET_PATH
 
 script_path = Path(__file__).parent.absolute().resolve()
 

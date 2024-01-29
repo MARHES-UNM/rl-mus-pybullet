@@ -3,12 +3,14 @@ from gymnasium import spaces
 import numpy as np
 import gymnasium as gym
 from gymnasium.utils import seeding
-from rl_mus.agents.agents import Uav
+from rl_mus.agents.agents import Target, Uav, UavCtrlType
 import logging
 import random
 from pybullet_utils import bullet_client as bc
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 import io
+import pybullet as p2
+import pybullet_data
 
 
 logger = logging.getLogger(__name__)
@@ -59,7 +61,7 @@ class RlMus(MultiAgentEnv):
         self.env_max_l = env_config.setdefault("env_max_l", 4)
         self.env_max_h = env_config.setdefault("env_max_h", 4)
         self._z_high = env_config.setdefault("z_high", 4)
-        self._z_low = env_config.setdefault("z_low", 4)
+        self._z_low = env_config.setdefault("z_low", 0.1)
         self.pad_r = env_config.setdefault("pad_r", 0.01)
         self.target_v = env_config.setdefault("target_v", 0)
         self.target_w = env_config.setdefault("target_w", 0)
@@ -75,12 +77,17 @@ class RlMus(MultiAgentEnv):
         self.action_high = np.ones(3) * 5
         self.action_low = np.ones(3) * -5
 
-        self.gui = None
+        self._renders = env_config.setdefault("renders", False)
+        self._render_height = env_config.setdefault("render_height", 200)
+        self._render_width = env_config.setdefault("render_width", 320)
+
+        self._physics_client_id = None
+
         self._time_elapsed = 0.0
         self.seed(self._seed)
         self.reset()
-        self.action_space = self._get_action_space()
-        self.observation_space = self._get_observation_space()
+        # self.action_space = self._get_action_space()
+        # self.observation_space = self._get_observation_space()
 
     def _get_action_space(self):
         """The action of the UAV. We don't normalize the action space in this environment.
@@ -652,27 +659,33 @@ class RlMus(MultiAgentEnv):
     def get_random_pos(
         self,
         low_h=0.1,
-        x_high=self.env_max_w,
-        y_high=self.env_max_l,
-        z_high=self.env_max_h,
+        x_high=None,
+        y_high=None,
+        z_high=None,
     ):
+        if x_high is None:
+            x_high = self.env_max_w
+        if y_high is None:
+            y_high = self.env_max_l
+        if z_high is None:
+            z_high = self.env_max_h
+
         x = np.random.rand() * x_high
         y = np.random.rand() * y_high
         z = np.random.uniform(low=low_h, high=z_high)
-        return (x, y, z)
+        return np.array([x, y, z])
 
-    def is_in_collision(self, uav):
-        # for pad in self.target.pads:
-        #     pad_landed, _, _ = uav.check_dest_reached(pad)
-        #     if pad_landed:
-        #         return True
+    def is_in_collision(self, entity, pos, rad):
+        for target in self.targets:
+            if target.in_collision(entity, pos, rad):
+                return True
 
-        # for obstacle in self.obstacles:
-        #     if uav.in_collision(obstacle):
-        #         return True
+        for obstacle in self.obstacles:
+            if obstacle.in_collision(entity, pos, rad):
+                return True
 
         for other_uav in self.uavs.values():
-            if uav.in_collision(other_uav):
+            if other_uav.in_collision(entity, pos, rad):
                 return True
 
         return False
@@ -689,98 +702,132 @@ class RlMus(MultiAgentEnv):
         #     seed = self._seed
         # super().reset(seed=seed)
 
-        if self._physics_client_id < 0:
+        if self._physics_client_id is None:
             if self._renders:
                 self._p = bc.BulletClient(connection_mode=p2.GUI)
             else:
                 self._p = bc.BulletClient()
 
-            self._physics_client_id = self._p.client
+            self._physics_client_id = self._p._client
 
-            p = self._p
+        p = self._p
 
-            p.resetSimualation()
+        p.resetSimulation()
 
-            # reset the uavs
+        if self._renders:
+
+            for i in [
+                p.COV_ENABLE_RGB_BUFFER_PREVIEW,
+                p.COV_ENABLE_DEPTH_BUFFER_PREVIEW,
+                p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW,
+            ]:
+                p.configureDebugVisualizer(
+                    i, 0, physicsClientId=self._physics_client_id
+                )
+            p.resetDebugVisualizerCamera(
+                cameraDistance=3,
+                cameraYaw=-15,
+                cameraPitch=-45,
+                cameraTargetPosition=[0, 0, 0],
+                physicsClientId=self._physics_client_id,
+            )
+            ret = p.getDebugVisualizerCamera(physicsClientId=self._physics_client_id)
+            logger.debug("viewMatrix", ret[2])
+            logger.debug("projectionMatrix", ret[3])
+
+            # # ### Add input sliders to the GUI ##########################
+            # # self.SLIDERS = -1*np.ones(4)
+            # # for i in range(4):
+            # # self.SLIDERS[i] = p.addUserDebugParameter("Propeller "+str(i)+" RPM", 0, self.MAX_RPM, self.HOVER_RPM, physicsClientId=self._physics_client_id)
+            # # self.INPUT_SWITCH = p.addUserDebugParameter("Use GUI RPM", 9999, -1, 0, physicsClientId=self._physics_client_id)
+        
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())  # optionally
+        self.plane_id = p.loadURDF("plane.urdf")
+        p.setGravity(0, 0, -self.g)
+        p.setTimeStep(self.dt)
+        p.setRealTimeSimulation(0)
+
+        p = self._p
 
         self._time_elapsed = 0.0
-        self._agent_ids = set(range(self.num_uavs))
+        self._agent_ids = set()
 
-        # TODO ensure we don't start in collision states
-        # Reset Target
-        x = np.random.rand() * self.env_max_w
-        y = np.random.rand() * self.env_max_l
-        y = np.random.rand() * self.env_max_l
-        x = self.env_max_w / 2.0
-        y = self.env_max_h / 2.0
-        self.target = Target(
-            _id=0,
-            x=x,
-            y=y,
-            v=self.target_v,
-            w=self.target_w,
-            dt=self.dt,
-            r=self.target_r,
-            num_landing_pads=self.num_uavs,
-        )
-
-        # Reset obstacles, obstacles should not be in collision with target. Obstacles can be in collision with each other.
-        self.obstacles = []
-        for idx in range(self.max_num_obstacles):
-            in_collision = True
-
-            while in_collision:
-                x, y, z = get_random_pos(low_h=self.obstacle_radius * 1.50, z_high=3.5)
-                _type = ObsType.S
-                obstacle = Obstacle(
-                    _id=idx,
-                    x=x,
-                    y=y,
-                    z=z,
-                    r=self.obstacle_radius,
-                    dt=self.dt,
-                    _type=_type,
-                )
-
-                in_collision = any(
-                    [
-                        obstacle.in_collision(other_obstacle)
-                        for other_obstacle in self.obstacles
-                        if obstacle.id != other_obstacle.id
-                    ]
-                )
-
-            self.obstacles.append(obstacle)
-
-        # Reset UAVs
         self.uavs = {}
-        for agent_id in self._agent_ids:
+        self.targets = []
+        self.obstacles = []
+
+        # Reset the UAVs
+        pos = [0.0, 0.0, 0.0]
+        for idx in range(self.num_uavs):
             in_collision = True
 
             # make sure the agent is not in collision with other agents or obstacles
             # the lowest height needs to be the uav radius x2
             while in_collision:
-                x, y, z = get_random_pos(low_h=self._z_low, z_high=self._z_high)
-                uav = self._uav_type(
-                    _id=agent_id,
-                    x=x,
-                    y=y,
-                    z=z,
-                    dt=self.dt,
-                    pad=self.target.pads[agent_id],
-                    d_thresh=self._d_thresh,
-                )
-                in_collision = is_in_collision(uav)
+                pos = self.get_random_pos(low_h=self._z_low, z_high=self._z_high)
 
-            # self.uavs.append(uav)
-            self.uavs[agent_id] = uav
+                in_collision = self.is_in_collision(entity=None, pos=pos, rad=0.1)
 
-            self.uavs[agent_id].init_tg = uav.get_t_go_est()
-            self.uavs[agent_id].init_r = uav.get_rel_pad_dist()
+            # position must be good if here
+            uav = Uav(
+                pos,
+                [0, 0, 0],
+                self._physics_client_id,
+                g=self.g,
+                ctrl_type=UavCtrlType.VEL,
+            )
+            self._agent_ids.add(uav.id)
 
-        obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
-        reward = {uav.id: self._get_reward(uav) for uav in self.uavs.values()}
-        info = {uav.id: self._get_info(uav) for uav in self.uavs.values()}
+            self.uavs[uav.id] = uav
+
+        # Reset Target
+        for _ in range(self.num_uavs):
+            in_collision = True
+
+            while in_collision:
+                pos = self.get_random_pos(low_h=self._z_low, z_high=self._z_high)
+
+                in_collision = self.is_in_collision(entity=None, pos=pos, rad=0.1)
+
+            # position must be good if here
+            target = Target(pos, self._physics_client_id, g=self.g)
+
+            self.targets.append(target)
+
+        # # Reset obstacles, obstacles should not be in collision with target. Obstacles can be in collision with each other.
+        # self.obstacles = []
+        # for idx in range(self.max_num_obstacles):
+        #     in_collision = True
+
+        #     while in_collision:
+        #         x, y, z = get_random_pos(low_h=self.obstacle_radius * 1.50, z_high=3.5)
+        #         _type = ObsType.S
+        #         obstacle = Obstacle(
+        #             _id=idx,
+        #             x=x,
+        #             y=y,
+        #             z=z,
+        #             r=self.obstacle_radius,
+        #             dt=self.dt,
+        #             _type=_type,
+        #         )
+
+        #         in_collision = any(
+        #             [
+        #                 obstacle.in_collision(other_obstacle)
+        #                 for other_obstacle in self.obstacles
+        #                 if obstacle.id != other_obstacle.id
+        #             ]
+        #         )
+
+        #     self.obstacles.append(obstacle)
+
+        # obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
+        # reward = {uav.id: self._get_reward(uav) for uav in self.uavs.values()}
+        # info = {uav.id: self._get_info(uav) for uav in self.uavs.values()}
+
+        obs = None
+        info = None
 
         return obs, info
 
@@ -820,7 +867,7 @@ class RlMus(MultiAgentEnv):
 
         return action
 
-    def render(self, mode="human", done=False):
+    def render(self, mode="human", close=False):
         """
         See this example for converting python figs to images:
         https://stackoverflow.com/questions/7821518/save-plot-to-numpy-array
@@ -832,34 +879,51 @@ class RlMus(MultiAgentEnv):
         Returns:
             _type_: _description_
         """
-        if self.gui is None:
-            self.gui = Gui(
-                self.uavs,
-                target=self.target,
-                obstacles=self.obstacles,
-                max_x=self.env_max_w,
-                max_y=self.env_max_l,
-                max_z=self.env_max_h,
-            )
-
         if mode == "human":
-            self.gui.update(self._time_elapsed, done)
+            self._renders = True
 
-        elif mode == "rgb_array":
-            fig = self.gui.update(self._time_elapsed, done)
+        if mode != "rgb_array":
+            return np.array([])
 
-            with io.BytesIO() as buff:
-                fig.savefig(buff, format="raw")
-                buff.seek(0)
-                data = np.frombuffer(buff.getvalue(), dtype=np.uint8)
-                w, h = fig.canvas.get_width_height()
-                im = data.reshape((int(h), int(w), -1))
-            return im
-
-    def close_gui(self):
-        if self.gui is not None:
-            self.gui.close()
-        self.gui = None
+        base_pos = [0, 0, 0]
+        self._cam_dist = 2
+        self._cam_pitch = 0.3
+        self._cam_yaw = 0
+        if self._physics_client_id >= 0:
+            view_matrix = self._p.computeViewMatrixFromYawPitchRoll(
+                cameraTargetPosition=base_pos,
+                distance=self._cam_dist,
+                yaw=self._cam_yaw,
+                pitch=self._cam_pitch,
+                roll=0,
+                upAxisIndex=2,
+            )
+            proj_matrix = self._p.computeProjectionMatrixFOV(
+                fov=60,
+                aspect=float(self._render_width) / self._render_height,
+                nearVal=0.1,
+                farVal=100.0,
+            )
+            (_, _, px, _, _) = self._p.getCameraImage(
+                width=self._render_width,
+                height=self._render_height,
+                renderer=self._p.ER_BULLET_HARDWARE_OPENGL,
+                viewMatrix=view_matrix,
+                projectionMatrix=proj_matrix,
+            )
+        else:
+            px = np.array(
+                [[[255, 255, 255, 255]] * self._render_width] * self._render_height,
+                dtype=np.uint8,
+            )
+        rgb_array = np.array(px, dtype=np.uint8)
+        rgb_array = np.reshape(
+            np.array(px), (self._render_height, self._render_width, -1)
+        )
+        rgb_array = rgb_array[:, :, :3]
+        return rgb_array
 
     def close(self):
-        self.close_gui()
+        if self._physics_client_id is not None:
+            self._p.disconnect()
+        self._physics_client_id = None

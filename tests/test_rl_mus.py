@@ -7,41 +7,54 @@ from rl_mus.envs.rl_mus import RlMus
 
 class TestRlMus(unittest.TestCase):
     def setUp(self):
+        pass
+
+    def test_reset(self):
         self.env = RlMus()
+        obs, info = self.env.reset()
 
-    def test_observation_space(self):
-        env = RlMus({"num_uavs": 1, "num_obstacles": 0})
-        obs_space = env.observation_space
-        self.assertEqual(len(obs_space.spaces), 1)
-        self.assertEqual(obs_space[0]["obstacles"].shape[0], 0)
-        self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 0)
-
-        env = RlMus({"num_uavs": 1, "num_obstacles": 1})
-        obs_space = env.observation_space
-        self.assertEqual(len(obs_space.spaces), 1)
-        self.assertEqual(obs_space[0]["obstacles"].shape[0], 1)
-        self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 0)
-
-        env = RlMus({"num_uavs": 2, "num_obstacles": 0})
-        obs_space = env.observation_space
-        self.assertEqual(len(obs_space.spaces), 2)
-        self.assertEqual(obs_space[0]["obstacles"].shape[0], 0)
-        self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 1)
-
-        env = RlMus({"num_uavs": 2, "num_obstacles": 1})
-        obs_space = env.observation_space
-        self.assertEqual(len(obs_space.spaces), 2)
-        self.assertEqual(obs_space[0]["obstacles"].shape[0], 1)
-        self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 1)
-
-    def test_random_action_sample(self):
-        obs = self.env.reset()
-
-        for i in range(100):
-            actions = self.env.action_space.sample()
-
-            obs, reward, done, info = self.env.step(actions)
+    def test_render(self):
+        self.env = RlMus(env_config={"renders": True})
+        obs, info = self.env.reset()
+        for _ in range(100):
             self.env.render()
+
+
+
+
+    # def test_observation_space(self):
+    #     env = RlMus({"num_uavs": 1, "num_obstacles": 0})
+    #     obs_space = env.observation_space
+    #     self.assertEqual(len(obs_space.spaces), 1)
+    #     self.assertEqual(obs_space[0]["obstacles"].shape[0], 0)
+    #     self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 0)
+
+    #     env = RlMus({"num_uavs": 1, "num_obstacles": 1})
+    #     obs_space = env.observation_space
+    #     self.assertEqual(len(obs_space.spaces), 1)
+    #     self.assertEqual(obs_space[0]["obstacles"].shape[0], 1)
+    #     self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 0)
+
+    #     env = RlMus({"num_uavs": 2, "num_obstacles": 0})
+    #     obs_space = env.observation_space
+    #     self.assertEqual(len(obs_space.spaces), 2)
+    #     self.assertEqual(obs_space[0]["obstacles"].shape[0], 0)
+    #     self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 1)
+
+    #     env = RlMus({"num_uavs": 2, "num_obstacles": 1})
+    #     obs_space = env.observation_space
+    #     self.assertEqual(len(obs_space.spaces), 2)
+    #     self.assertEqual(obs_space[0]["obstacles"].shape[0], 1)
+    #     self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 1)
+
+    # def test_random_action_sample(self):
+    #     obs = self.env.reset()
+
+    #     for i in range(100):
+    #         actions = self.env.action_space.sample()
+
+    #         obs, reward, done, info = self.env.step(actions)
+    #         self.env.render()
 
     # def test_time_coordinated_control_mat(self):
     #     tf = 30.0

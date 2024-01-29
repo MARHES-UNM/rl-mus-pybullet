@@ -79,8 +79,13 @@ class Entity:
         self.vel = np.array(self.vel)
         self.ang_v = np.array(self.ang_v)
 
+        self._state = np.hstack(
+                [self.pos, self.quat, self.rpy, self.vel, self.ang_v]
+            ).reshape(
+                -1,
+            )
     def draw_local_axis(self):
-        axis_length = 2*self.rad
+        axis_length = 2 * self.rad
         self.x_axis = p.addUserDebugLine(
             lineFromXYZ=[0, 0, 0],
             lineToXYZ=[axis_length, 0, 0],
@@ -109,16 +114,29 @@ class Entity:
             physicsClientId=self.client,
         )
 
+
+
     def step(self):
         raise NotImplemented()
 
+    def in_collision(
+        self,
+        entity,
+        pos=None,
+        rad=0.1,
+    ):
+        """
+        #TODO: Find a better to represent collisions
+        """
+        if pos is None:
+            dist = np.linalg.norm(self._state[0:3] - entity.state[0:3])
+            return dist <= (self.rad + entity.rad)
+        else:
+            dist = np.linalg.norm(self.pos - pos)
+            return dist <= (self.rad + rad)
+
     @property
     def state(self):
-        self._state = np.hstack(
-            [self.pos, self.quat, self.rpy, self.vel, self.ang_v]
-        ).reshape(
-            -1,
-        )
         return self._state
 
 
@@ -173,7 +191,14 @@ class Uav(Entity):
         self.arm = 0.0397
 
         super().__init__(
-            init_xyz, init_rpy, client, urdf, g, _type, rad=self.arm, show_local_axis=show_local_axis
+            init_xyz,
+            init_rpy,
+            client,
+            urdf,
+            g,
+            _type,
+            rad=self.arm,
+            show_local_axis=show_local_axis,
         )
 
         self.m = 0.027

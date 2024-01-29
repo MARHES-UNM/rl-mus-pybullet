@@ -32,32 +32,7 @@ class TestUav(unittest.TestCase):
             print("viewMatrix", ret[2])
             print("projectionMatrix", ret[3])
 
-            # axis_length = 2*self.l
-            # self.x_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
-            #                                           lineToXYZ=[axis_length, 0, 0],
-            #                                           lineColorRGB=[1, 0, 0],
-            #                                           parentObjectUniqueId=self.uav.id,
-            #                                           parentLinkIndex=-1,
-            #                                           replaceItemUniqueId=int(self.X_AX[nth_drone]),
-            #                                           physicsClientId=self.client
-            #                                           )
-            # self.y_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
-            #                                           lineToXYZ=[0, axis_length, 0],
-            #                                           lineColorRGB=[0, 1, 0],
-            #                                           parentObjectUniqueId=self.uav.id,
-            #                                           parentLinkIndex=-1,
-            #                                           replaceItemUniqueId=int(self.Y_AX[nth_drone]),
-            #                                           physicsClientId=self.client
-            #                                           )
-            # self.z_axis = p.addUserDebugLine(lineFromXYZ=[0, 0, 0],
-            #                                           lineToXYZ=[0, 0, axis_length],
-            #                                           lineColorRGB=[0, 0, 1],
-            #                                           parentObjectUniqueId=self.uav.id,
-            #                                           parentLinkIndex=-1,
-            #                                           replaceItemUniqueId=int(self.Z_AX[nth_drone]),
-            #                                           physicsClientId=self.client
-            #                                           )
-            # # ### Add input sliders to the GUI ##########################
+                        # # ### Add input sliders to the GUI ##########################
             # # self.SLIDERS = -1*np.ones(4)
             # # for i in range(4):
             # # self.SLIDERS[i] = p.addUserDebugParameter("Propeller "+str(i)+" RPM", 0, self.MAX_RPM, self.HOVER_RPM, physicsClientId=self.client)

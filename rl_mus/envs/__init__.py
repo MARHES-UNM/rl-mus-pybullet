@@ -1,1 +1,1 @@
-from rl_mus.envs.rl_mus import GridWorldEnv
+from rl_mus.envs.rl_mus import RlMus

@@ -18,6 +18,19 @@
             ]
         },
         {
+            "name": "test_target",
+            "type": "python",
+            "request": "launch",
+            "module": "unittest",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-v",
+                "${cwd}/tests/test_target.py",
+                "--failfast"
+            ]
+        },
+        {
             "name": "test_plotter",
             "type": "python",
             "request": "launch",

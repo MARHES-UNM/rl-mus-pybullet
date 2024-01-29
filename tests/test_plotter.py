@@ -2,7 +2,7 @@ import unittest
 
 import pybullet as p
 import pybullet_data
-from rl_mus.agents.uav import Entity, Uav, UavCtrlType
+from rl_mus.agents.agents import Entity, Uav, UavCtrlType
 from rl_mus.utils.plot_utils import Plotter
 import time
 import numpy as np

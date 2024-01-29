@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from cycler import cycler
 
-from rl_mus.agents.uav import UavCtrlType
+from rl_mus.agents.agents import UavCtrlType
 
 
 class Plotter:

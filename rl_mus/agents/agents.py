@@ -21,6 +21,7 @@ class AgentType(IntEnum):
 class ObsType(IntEnum):
     S = 0  # Static
     M = 1  # Moving
+    T = 2  # Target
 
 
 class UavCtrlType(IntEnum):
@@ -35,6 +36,7 @@ class UavCtrlConf(IntEnum):
     P = 1
 
 
+
 class Entity:
     def __init__(
         self, init_xyz, init_rpy, client, urdf="box.urdf", g=9.81, _type=AgentType.O
@@ -44,7 +46,7 @@ class Entity:
         self.urdf = urdf
 
         self.id = p.loadURDF(
-            os.path.join(ASSET_PATH, self.urdf),
+            self.urdf,
             init_xyz,
             p.getQuaternionFromEuler(init_rpy),
             flags=p.URDF_USE_INERTIA_FROM_FILE,
@@ -77,6 +79,14 @@ class Entity:
         )
         return self._state
 
+class Target(Entity):
+
+    def __init__(self,init_xyz, client, g=9.81):
+        init_rpy = [0, 0, 0]
+        _type = AgentType.T
+        urdf = os.path.join(ASSET_PATH, "sphere.urdf")
+        super().__init__(init_xyz, init_rpy, client=client, urdf=urdf, g=g, _type=_type)
+
 
 class Uav(Entity):
     def __init__(
@@ -107,6 +117,7 @@ class Uav(Entity):
         else:
             raise TypeError("Unknow UAV configuration.")
 
+        urdf = os.path.join(ASSET_PATH, urdf)
         super().__init__(init_xyz, init_rpy, client, urdf, g, _type)
 
         self.m = 0.027

@@ -2,12 +2,11 @@ import sys
 from gymnasium import spaces
 import numpy as np
 import gymnasium as gym
-from gym.utils import seeding
-from sim.agents.missile import Obstacle, UavBase, Uav, ObsType
-from sim.agents.missile import Target
-from scipy.integrate import odeint
+from gymnasium.utils import seeding
+from rl_mus.agents.agents import Uav
 import logging
 import random
+from pybullet_utils import bullet_client as bc
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 import io
 
@@ -21,9 +20,10 @@ class RlMus(MultiAgentEnv):
         "render_fps": 30,
     }
 
-    def __init__(self, env_config={}):
+    def __init__(self, env_config={}, render_mode=None):
         super().__init__()
         self.dt = env_config.setdefault("dt", 0.1)
+        self.g = env_config.setdefault("g", 9.81)
         self._seed = env_config.setdefault("seed", None)
         self.render_mode = env_config.setdefault("render_mode", "human")
         self.num_uavs = env_config.setdefault("num_uavs", 4)
@@ -31,7 +31,6 @@ class RlMus(MultiAgentEnv):
         self.num_obstacles = env_config.setdefault("num_obstacles", 4)
         self.obstacle_radius = env_config.setdefault("obstacle_radius", 1)
         self.max_num_obstacles = env_config.setdefault("max_num_obstacles", 4)
-        # self.num_obstacles = min(self.max_num_obstacles, self.num_obstacles)
         assert self.max_num_obstacles >= self.num_obstacles, print(
             f"Max number of obstacles {self.max_num_obstacles} is less than number of obstacles {self.num_obstacles}"
         )
@@ -39,9 +38,6 @@ class RlMus(MultiAgentEnv):
             "obstacle_collision_weight", 0.1
         )
         self.uav_collision_weight = env_config.setdefault("uav_collision_weight", 0.1)
-        # self.uav_collision_weight = env_config.setdefault(
-        #     "uav_collision_weight", 0.1
-        # )
         self._use_safe_action = env_config.setdefault("use_safe_action", False)
         self.time_final = env_config.setdefault("time_final", 20.0)
         self.t_go_max = env_config.setdefault("t_go_max", 2.0)
@@ -68,10 +64,11 @@ class RlMus(MultiAgentEnv):
         self.target_v = env_config.setdefault("target_v", 0)
         self.target_w = env_config.setdefault("target_w", 0)
         self.target_r = env_config.setdefault("target_r", 1)
-        self.max_time = env_config.setdefault("max_time", 40)
+        self.max_time = env_config.setdefault("max_time", 10)
         self.max_time = self.time_final + (self.t_go_max * 2)
 
         self.env_config = env_config
+
         self.norm_action_high = np.ones(3)
         self.norm_action_low = np.ones(3) * -1
 
@@ -652,6 +649,34 @@ class RlMus(MultiAgentEnv):
         seed = seeding.np_random(seed)
         return [seed]
 
+    def get_random_pos(
+        self,
+        low_h=0.1,
+        x_high=self.env_max_w,
+        y_high=self.env_max_l,
+        z_high=self.env_max_h,
+    ):
+        x = np.random.rand() * x_high
+        y = np.random.rand() * y_high
+        z = np.random.uniform(low=low_h, high=z_high)
+        return (x, y, z)
+
+    def is_in_collision(self, uav):
+        # for pad in self.target.pads:
+        #     pad_landed, _, _ = uav.check_dest_reached(pad)
+        #     if pad_landed:
+        #         return True
+
+        # for obstacle in self.obstacles:
+        #     if uav.in_collision(obstacle):
+        #         return True
+
+        for other_uav in self.uavs.values():
+            if uav.in_collision(other_uav):
+                return True
+
+        return False
+
     def reset(self, *, seed=None, options=None):
         """_summary_
 
@@ -664,8 +689,19 @@ class RlMus(MultiAgentEnv):
         #     seed = self._seed
         # super().reset(seed=seed)
 
-        if self.gui is not None:
-            self.close_gui()
+        if self._physics_client_id < 0:
+            if self._renders:
+                self._p = bc.BulletClient(connection_mode=p2.GUI)
+            else:
+                self._p = bc.BulletClient()
+
+            self._physics_client_id = self._p.client
+
+            p = self._p
+
+            p.resetSimualation()
+
+            # reset the uavs
 
         self._time_elapsed = 0.0
         self._agent_ids = set(range(self.num_uavs))
@@ -673,6 +709,7 @@ class RlMus(MultiAgentEnv):
         # TODO ensure we don't start in collision states
         # Reset Target
         x = np.random.rand() * self.env_max_w
+        y = np.random.rand() * self.env_max_l
         y = np.random.rand() * self.env_max_l
         x = self.env_max_w / 2.0
         y = self.env_max_h / 2.0
@@ -686,33 +723,6 @@ class RlMus(MultiAgentEnv):
             r=self.target_r,
             num_landing_pads=self.num_uavs,
         )
-
-        def get_random_pos(
-            low_h=0.1,
-            x_high=self.env_max_w,
-            y_high=self.env_max_l,
-            z_high=self.env_max_h,
-        ):
-            x = np.random.rand() * x_high
-            y = np.random.rand() * y_high
-            z = np.random.uniform(low=low_h, high=z_high)
-            return (x, y, z)
-
-        def is_in_collision(uav):
-            for pad in self.target.pads:
-                pad_landed, _, _ = uav.check_dest_reached(pad)
-                if pad_landed:
-                    return True
-
-            for obstacle in self.obstacles:
-                if uav.in_collision(obstacle):
-                    return True
-
-            for other_uav in self.uavs.values():
-                if uav.in_collision(other_uav):
-                    return True
-
-            return False
 
         # Reset obstacles, obstacles should not be in collision with target. Obstacles can be in collision with each other.
         self.obstacles = []
@@ -771,8 +781,7 @@ class RlMus(MultiAgentEnv):
         obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
         reward = {uav.id: self._get_reward(uav) for uav in self.uavs.values()}
         info = {uav.id: self._get_info(uav) for uav in self.uavs.values()}
-        # self.terminateds = set()
-        # self.truncateds = set()
+
         return obs, info
 
     def unscale_action(self, action):

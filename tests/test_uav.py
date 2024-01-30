@@ -32,7 +32,7 @@ class TestUav(unittest.TestCase):
             print("viewMatrix", ret[2])
             print("projectionMatrix", ret[3])
 
-                        # # ### Add input sliders to the GUI ##########################
+            # # ### Add input sliders to the GUI ##########################
             # # self.SLIDERS = -1*np.ones(4)
             # # for i in range(4):
             # # self.SLIDERS[i] = p.addUserDebugParameter("Propeller "+str(i)+" RPM", 0, self.MAX_RPM, self.HOVER_RPM, physicsClientId=self.client)
@@ -64,47 +64,42 @@ class TestUav(unittest.TestCase):
 
     # @unittest.skip
     def test_uav_hover_rpm(self):
-        uav_des_traj = []
-        uav_trajectory = []
-
         start_pos = [0, 0, 1]
         start_rpy = [0, 0, 0]
         self.uav = Uav(
             start_pos, start_rpy, client=self.client, ctrl_type=UavCtrlType.RPM
         )
-        rpms_des = np.zeros(4)
 
-        des_pos = self.uav.state.copy()
+        plotter = Plotter(ctrl_type=UavCtrlType.RPM)
+        plotter.add_uav(self.uav.id)
+
+        rpms_des = np.zeros(4)
 
         for i in range(2 * 240):
             self.uav.step(rpms_des)
             p.stepSimulation()
 
-            uav_des_traj.append(des_pos.copy())
-            uav_trajectory.append(self.uav.state.copy())
+            plotter.log(self.uav.id, state=self.uav.state, ref_ctrl=rpms_des)
 
-        uav_des_traj = np.array(uav_des_traj)
-        uav_trajectory = np.array(uav_trajectory)
-
-        plot_traj(uav_des_traj, uav_trajectory, title="Test Desired Controller")
+        plotter.plot(plt_ctrl=True, title="Test Desired RPMs to Hover.")
 
     # @unittest.skip
     def test_uav_hover_vel(self):
-        vel_des = np.zeros(3)
         self.uav = Uav(
             [1, 0, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
         )
 
-        plotter = Plotter()
+        plotter = Plotter(ctrl_type=UavCtrlType.VEL)
         plotter.add_uav(self.uav.id)
 
+        vel_des = np.zeros(3)
         for i in range(10 * 240):
             self.uav.step(vel_des)
             p.stepSimulation()
 
             plotter.log(self.uav.id, self.uav.state, vel_des)
 
-        plotter.plot("Test UAV Hover Velocity")
+        plotter.plot("Test UAV Hover Velocity", plt_ctrl=True)
 
     # @unittest.skip
     def test_uav_vel_tracking(self):
@@ -180,7 +175,6 @@ class TestUav(unittest.TestCase):
         self.uav = Uav(
             [0, 0, 2], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.POS
         )
-
 
         plotter = Plotter(ctrl_type=UavCtrlType.POS)
         plotter.add_uav(self.uav.id)

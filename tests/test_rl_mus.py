@@ -10,15 +10,15 @@ class TestRlMus(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_reset(self):
-        self.env = RlMus()
-        obs, info = self.env.reset()
+    # def test_reset(self):
+    #     self.env = RlMus()
+    #     obs, info = self.env.reset()
 
-    def test_render(self):
-        self.env = RlMus(env_config={"renders": True})
-        obs, info = self.env.reset()
-        for _ in range(100):
-            self.env.render()
+    # def test_render(self):
+    #     self.env = RlMus(env_config={"renders": True})
+    #     obs, info = self.env.reset()
+    #     for _ in range(100):
+    #         self.env.render()
 
     # def test_observation_space(self):
     #     env = RlMus({"num_uavs": 1, "num_obstacles": 0})

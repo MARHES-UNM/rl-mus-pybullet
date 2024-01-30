@@ -24,7 +24,7 @@ class RlMus(MultiAgentEnv):
 
     def __init__(self, env_config={}, render_mode=None):
         super().__init__()
-        self.dt = env_config.setdefault("dt", 240)
+        # self.dt = env_config.setdefault("dt", 240)
         self.g = env_config.setdefault("g", 9.81)
         self._seed = env_config.setdefault("seed", None)
         self.render_mode = env_config.setdefault("render_mode", "human")
@@ -72,6 +72,8 @@ class RlMus(MultiAgentEnv):
         self._renders = env_config.setdefault("renders", False)
         self._render_height = env_config.setdefault("render_height", 200)
         self._render_width = env_config.setdefault("render_width", 320)
+        self._pyb_freq = env_config.setdefault("pybullet_freq", 240)
+        self.dt  = 1 / self._pyb_freq 
 
         self._physics_client_id = None
 
@@ -431,6 +433,8 @@ class RlMus(MultiAgentEnv):
         # for obstacle in self.obstacles:
         #     obstacle.step(np.array([self.target.vx, self.target.vy]))
 
+        self._p.stepSimulation()
+
         obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
         reward = {uav.id: self._get_reward(uav) for uav in self.uavs.values()}
         info = {uav.id: self._get_info(uav) for uav in self.uavs.values()}
@@ -633,7 +637,7 @@ class RlMus(MultiAgentEnv):
 
         p = self._p
 
-        p.resetSimulation()
+        # p.resetSimulation()
 
         if self._renders:
             for i in [

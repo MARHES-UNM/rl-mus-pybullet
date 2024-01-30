@@ -3,9 +3,12 @@
 ## TODO:
 [ ] Create environment for multi-agent
     use this to create the the environment
+    https://gymnasium.farama.org/tutorials/gymnasium_basics/environment_creation/
     https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/gym/pybullet_envs/bullet/cartpole_bullet.py
 [x] confirm mixin matrix
 [x] used x configurration instead of plus configuration
+[ ] test out the environment
+    https://colab.research.google.com/drive/1sTGKVldqzQf5R2kyBrmBkvdk6-bptFEJ#scrollTo=C4_iJOkEsMwv
 
 
 

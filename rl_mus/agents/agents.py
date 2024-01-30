@@ -156,6 +156,9 @@ class Target(Entity):
             show_local_axis=show_local_axis,
         )
 
+    def step(action=np.zeros(3)):
+        pass
+
 
 class Uav(Entity):
     def __init__(
@@ -236,6 +239,9 @@ class Uav(Entity):
         self.integral_rpy_e = np.zeros(3)
 
         self.hover_rpm = np.array([np.sqrt((self.g * self.m) / (4 * self.kf))] * 4)
+        self.target_id = None
+        self.done = False
+        self.target_reached = False
 
     def compute_control(
         self, pos_des, rpy_des, vel_des=np.zeros(3), ang_vel_des=np.zeros(3)

@@ -35,11 +35,11 @@ class TestRlMus(unittest.TestCase):
     #     self.assertEqual(obs_space[0]["obstacles"].shape[0], 1)
     #     self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 0)
 
-        # env = RlMus({"num_uavs": 2, "num_obstacles": 0})
-        # obs_space = env.observation_space
-        # self.assertEqual(len(obs_space.spaces), 2)
-        # self.assertEqual(obs_space[0]["obstacles"].shape[0], 0)
-        # self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 1)
+    # env = RlMus({"num_uavs": 2, "num_obstacles": 0})
+    # obs_space = env.observation_space
+    # self.assertEqual(len(obs_space.spaces), 2)
+    # self.assertEqual(obs_space[0]["obstacles"].shape[0], 0)
+    # self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 1)
 
     #     env = RlMus({"num_uavs": 2, "num_obstacles": 1})
     #     obs_space = env.observation_space
@@ -59,7 +59,13 @@ class TestRlMus(unittest.TestCase):
             # time.sleep(1/ 240)
 
     def test_uav_go_to_goal(self):
-        env = RlMus(env_config={"renders": True, "num_uavs": 3, "uav_ctrl_type": UavCtrlType.POS})
+        env = RlMus(
+            env_config={
+                "renders": True,
+                "num_uavs": 3,
+                "uav_ctrl_type": UavCtrlType.POS,
+            }
+        )
         obs, info = env.reset()
 
         plotter = Plotter(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
@@ -68,17 +74,16 @@ class TestRlMus(unittest.TestCase):
             plotter.add_uav(uav.id)
 
         for i in range(10 * 240):
-            
             actions = {uav.id: np.zeros(4) for uav in env.uavs.values()}
-            
+
             for uav in env.uavs.values():
                 actions[uav.id][:3] = obs[uav.id]["target"]
-                actions[uav.id][3] = obs[uav.id]['state'][9] * 0
+                actions[uav.id][3] = obs[uav.id]["state"][9] * 0
 
             obs, reward, done, truncated, info = env.step(actions)
             env.render()
             time.sleep(1 / 240)
-            
+
             for uav in env.uavs.values():
                 plotter.log(uav_id=uav.id, ref_ctrl=actions[uav.id], state=uav.state)
 
@@ -86,7 +91,13 @@ class TestRlMus(unittest.TestCase):
         env.close()
 
     def test_uav_vel_control(self):
-        env = RlMus(env_config={"renders": True, "num_uavs": 4, "uav_ctrl_type": UavCtrlType.VEL})
+        env = RlMus(
+            env_config={
+                "renders": True,
+                "num_uavs": 4,
+                "uav_ctrl_type": UavCtrlType.VEL,
+            }
+        )
         obs, info = env.reset()
 
         plotter = Plotter(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
@@ -96,23 +107,21 @@ class TestRlMus(unittest.TestCase):
 
         actions = {uav.id: np.zeros(3) for uav in env.uavs.values()}
         for i in range(10 * 240):
-            
             for uav in env.uavs.values():
-                if i % (240 ) == 0:
+                if i % (240) == 0:
                     actions = env.action_space.sample()
-                # actions[uav.id][:3] = .5*(obs[uav.id]["state"][:3] - obs[uav.id]["target"])
 
             obs, reward, done, truncated, info = env.step(actions)
             env.render()
             time.sleep(1 / 240)
-            
+
             for uav in env.uavs.values():
                 plotter.log(uav_id=uav.id, ref_ctrl=actions[uav.id], state=uav.state)
 
         plotter.plot(plt_ctrl=True)
 
         env.close()
-        # plotter.plot(plt_ctrl=True)
+
     # def test_time_coordinated_control_mat(self):
     #     tf = 30.0
     #     tf = 20.0
@@ -819,24 +828,6 @@ class TestRlMus(unittest.TestCase):
     #             actions[idx] = self.env.uavs[idx].calc_torque(pos)
     #         self.env.step(actions)
     #         self.env.render()
-
-    # def test_setting_uav_pos(self):
-    #     self.env = RlMus(env_config={"dt": 0.1})
-    #     uav_pos = np.array([[0.5, 0.5, 1], [0.5, 2, 2], [2, 0.5, 2], [2, 2, 1]])
-    #     for idx, pos in enumerate(uav_pos):
-    #         self.env.uavs[idx]._state[0] = pos[0]
-    #         self.env.uavs[idx]._state[1] = pos[1]
-    #         self.env.uavs[idx]._state[2] = pos[2]
-
-    #     for i in range(20):
-    #         u_in = np.zeros(3)
-    #         actions = {_id: np.zeros(3) for _id in range(self.env.num_uavs)}
-    #         self.env.step(actions)
-
-    #     for idx in range(self.env.num_uavs):
-    #         np.testing.assert_array_almost_equal(
-    #             uav_pos[idx, 0:3], self.env.uavs[idx].state[0:3]
-    #         )
 
     # def test_constraints(self):
     #     config = {"max_num_obstacles": 2, "num_obstacles": 1, "num_uavs": 2}

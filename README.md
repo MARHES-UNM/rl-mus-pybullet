@@ -8,8 +8,10 @@
 [x] confirm mixin matrix
 [x] used x configurration instead of plus configuration
 [ ] test out the environment
+[ ] add obstacle to environment
+[ ] plot environment specific items (rewards, target reached, dt time, number of collisions)
+[ ] Train with RL lib
     https://colab.research.google.com/drive/1sTGKVldqzQf5R2kyBrmBkvdk6-bptFEJ#scrollTo=C4_iJOkEsMwv
-
 
 
 This repo is mostly a refactor of the works done in [gym-pybullet-drones

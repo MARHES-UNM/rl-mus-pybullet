@@ -80,7 +80,6 @@ class RlMus(MultiAgentEnv):
 
         self._time_elapsed = 0.0
         self.seed(self._seed)
-        # we need the first uav id for some housekeeping
         self.reset()
         self.action_space = self._get_action_space()
         self.observation_space = self._get_observation_space()
@@ -539,9 +538,6 @@ class RlMus(MultiAgentEnv):
                 reward += (
                     -(1 - (self.time_elapsed / self.time_final)) * self._stp_penalty
                 )
-            # # get reward for reaching destination in time
-            # if abs(uav.done_dt) <= self.t_go_max:
-            #     reward += self._dt_reward
 
             # No need to check for other reward, UAV is done.
             return reward
@@ -677,6 +673,7 @@ class RlMus(MultiAgentEnv):
         self._time_elapsed = 0.0
         self._agent_ids = set()
 
+        # we need the first uav id for some housekeeping
         self._first_uav_id = None
         self.uavs = {}
         self.targets = {}

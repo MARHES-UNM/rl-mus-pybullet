@@ -52,8 +52,9 @@ class RlMus(MultiAgentEnv):
         self._dt_weight = env_config.setdefault("dt_weight", 0.0)
 
         self._uav_type = getattr(
-            sys.modules[__name__], env_config.get("uav_type", "Uav")
+            sys.modules[__name__], env_config.setdefault("uav_type", "Uav")
         )
+        self.uav_ctrl_type = env_config.setdefault("uav_ctrl_type", UavCtrlType.VEL)
 
         self.env_max_w = env_config.setdefault("env_max_w", 4)
         self.env_max_l = env_config.setdefault("env_max_l", 4)
@@ -80,7 +81,6 @@ class RlMus(MultiAgentEnv):
         self._time_elapsed = 0.0
         self.seed(self._seed)
         # we need the first uav id for some housekeeping
-        self._first_uav_id = None
         self.reset()
         self.action_space = self._get_action_space()
         self.observation_space = self._get_observation_space()
@@ -94,7 +94,7 @@ class RlMus(MultiAgentEnv):
                 uav.id: spaces.Box(
                     low=self.action_low,
                     high=self.action_high,
-                    shape=(3,),
+                    shape=(self.num_actions,),
                     dtype=np.float32,
                 )
                 for uav in self.uavs.values()
@@ -426,8 +426,9 @@ class RlMus(MultiAgentEnv):
             action = np.clip(action, self.action_low, self.action_high)
             self.uavs[uav_id].step(action)
 
-            # step target
-            self.targets[uav_id].step()
+        # step target
+        for target in self.targets.values():
+            target.step()
 
         # # step obstacles
         # for obstacle in self.obstacles:
@@ -493,7 +494,7 @@ class RlMus(MultiAgentEnv):
 
         obs_dict = {
             "state": uav.state.astype(np.float32),
-            "target": self.targets[uav.id].pos.astype(np.float32),
+            "target": self.targets[uav.target_id].pos.astype(np.float32),
             "done_dt": np.array(
                 [self.time_final - self._time_elapsed], dtype=np.float32
             ),
@@ -510,8 +511,8 @@ class RlMus(MultiAgentEnv):
         t_remaining = self.time_final - self.time_elapsed
         uav.uav_collision = 0.0
         uav.obs_collision = 0.0
-        uav.rel_target_dist = np.linalg.norm(uav.pos - self.targets[uav.id].pos)
-        uav.rel_target_vel = np.linalg.norm(uav.vel - self.targets[uav.id].vel)
+        uav.rel_target_dist = np.linalg.norm(uav.pos - self.targets[uav.target_id].pos)
+        uav.rel_target_vel = np.linalg.norm(uav.vel - self.targets[uav.target_id].vel)
         is_reached = uav.rel_target_dist <= self._d_thresh
 
         if uav.done:
@@ -637,7 +638,7 @@ class RlMus(MultiAgentEnv):
 
         p = self._p
 
-        # p.resetSimulation()
+        p.resetSimulation()
 
         if self._renders:
             for i in [
@@ -676,6 +677,7 @@ class RlMus(MultiAgentEnv):
         self._time_elapsed = 0.0
         self._agent_ids = set()
 
+        self._first_uav_id = None
         self.uavs = {}
         self.targets = {}
         self.obstacles = []
@@ -698,7 +700,7 @@ class RlMus(MultiAgentEnv):
                 [0, 0, 0],
                 self._physics_client_id,
                 g=self.g,
-                ctrl_type=UavCtrlType.VEL,
+                ctrl_type=self.uav_ctrl_type,
             )
             if self._first_uav_id is None:
                 self._first_uav_id = uav.id
@@ -720,7 +722,7 @@ class RlMus(MultiAgentEnv):
             # position must be good if here
             target = Target(pos, self._physics_client_id, g=self.g)
 
-            self.targets[uav.id] = target
+            self.targets[target.id] = target
             uav.target_id = target.id
 
         # # Reset obstacles, obstacles should not be in collision with target. Obstacles can be in collision with each other.
@@ -754,8 +756,9 @@ class RlMus(MultiAgentEnv):
         self.norm_action_high = np.ones(3)
         self.norm_action_low = np.ones(3) * -1
 
-        self.action_high = np.ones(3) * self.uavs[self._first_uav_id].vel_lim
-        self.action_low = -self.action_high
+        self.action_high = self.uavs[self._first_uav_id].action_high
+        self.action_low = self.uavs[self._first_uav_id].action_low
+        self.num_actions = self.uavs[self._first_uav_id].num_actions
 
         obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
         # we need to call reward here so that info items will get populated

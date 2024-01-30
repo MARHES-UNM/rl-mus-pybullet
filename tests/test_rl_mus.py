@@ -2,8 +2,10 @@ import time
 from matplotlib import pyplot as plt
 import numpy as np
 import unittest
+from rl_mus.agents.agents import UavCtrlType
 
 from rl_mus.envs.rl_mus import RlMus
+from rl_mus.utils.plot_utils import Plotter
 
 
 class TestRlMus(unittest.TestCase):
@@ -49,12 +51,68 @@ class TestRlMus(unittest.TestCase):
         env = RlMus(env_config={"renders": True, "num_uavs": 4})
         obs, info = env.reset()
 
-        for i in range(1000):
+        for i in range(10 * 240):
             actions = env.action_space.sample()
 
             obs, reward, done, truncated, info = env.step(actions)
             env.render()
+            # time.sleep(1/ 240)
 
+    def test_uav_go_to_goal(self):
+        env = RlMus(env_config={"renders": True, "num_uavs": 3, "uav_ctrl_type": UavCtrlType.POS})
+        obs, info = env.reset()
+
+        plotter = Plotter(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
+
+        for uav in env.uavs.values():
+            plotter.add_uav(uav.id)
+
+        for i in range(10 * 240):
+            
+            actions = {uav.id: np.zeros(4) for uav in env.uavs.values()}
+            
+            for uav in env.uavs.values():
+                actions[uav.id][:3] = obs[uav.id]["target"]
+                actions[uav.id][3] = obs[uav.id]['state'][9] * 0
+
+            obs, reward, done, truncated, info = env.step(actions)
+            env.render()
+            time.sleep(1 / 240)
+            
+            for uav in env.uavs.values():
+                plotter.log(uav_id=uav.id, ref_ctrl=actions[uav.id], state=uav.state)
+
+        plotter.plot(plt_ctrl=True)
+        env.close()
+
+    def test_uav_vel_control(self):
+        env = RlMus(env_config={"renders": True, "num_uavs": 4, "uav_ctrl_type": UavCtrlType.VEL})
+        obs, info = env.reset()
+
+        plotter = Plotter(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
+
+        for uav in env.uavs.values():
+            plotter.add_uav(uav.id)
+
+        actions = {uav.id: np.zeros(3) for uav in env.uavs.values()}
+        for i in range(10 * 240):
+            
+            for uav in env.uavs.values():
+                if i % (240 ) == 0:
+                    actions = env.action_space.sample()
+                # actions[uav.id][:3] = .5*(obs[uav.id]["state"][:3] - obs[uav.id]["target"])
+
+            obs, reward, done, truncated, info = env.step(actions)
+            env.render()
+            time.sleep(1 / 240)
+            
+            for uav in env.uavs.values():
+                plotter.log(uav_id=uav.id, ref_ctrl=actions[uav.id], state=uav.state)
+
+        plotter.plot(plt_ctrl=True)
+
+        env.close()
+        # plotter.plot(plt_ctrl=True)
     # def test_time_coordinated_control_mat(self):
     #     tf = 30.0
     #     tf = 20.0

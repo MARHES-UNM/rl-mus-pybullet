@@ -56,6 +56,7 @@ class TestPlotter(unittest.TestCase):
             pos_des[:3] = target.pos
             self.uav.step(pos_des)
             p.stepSimulation()
+            # time.sleep(1 / 240)
 
             # plotter.log(self.uav.id, self.uav.state, pos_des)
 

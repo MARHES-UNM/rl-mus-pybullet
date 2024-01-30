@@ -193,6 +193,7 @@ class Uav(Entity):
         urdf = os.path.join(ASSET_PATH, urdf)
         self.arm = 0.0397
 
+
         super().__init__(
             init_xyz,
             init_rpy,
@@ -242,6 +243,20 @@ class Uav(Entity):
         self.target_id = None
         self.done = False
         self.target_reached = False
+
+        if self.ctrl_type == UavCtrlType.RPM:
+            self.num_actions = 4
+            self.action_high = np.ones(self.num_actions) * self.max_pwm
+            self.action_low = np.ones(self.num_actions) * self.min_pwm
+        elif self.ctrl_type == UavCtrlType.POS:
+            self.num_actions = 4
+            self.action_high = np.ones(self.num_actions)*np.inf
+            self.action_low = -np.ones(self.num_actions)*np.inf
+        elif self.ctrl_type == UavCtrlType.VEL:
+            self.num_actions = 3
+            self.action_high = np.ones(self.num_actions) * self.vel_lim
+            self.action_low = -np.ones(self.num_actions) * self.vel_lim
+
 
     def compute_control(
         self, pos_des, rpy_des, vel_des=np.zeros(3), ang_vel_des=np.zeros(3)

@@ -27,12 +27,17 @@ class Plotter:
         self.data[array_idx]["ctrl"].append(ref_ctrl)
 
     def plot(self, title="", plt_ctrl=False):
-        if self.num_uavs > 1:
+        if self.num_uavs > 1 and self.num_uavs <= 4:
+            colors = ["r", "g", "b", "y"]
+            linestyle = ["-", "--", ":", "-."]
+
+            c = [colors[i] for i in range(self.num_uavs)]
+            l = [linestyle[i] for i in range(self.num_uavs)]
             plt.rc(
                 "axes",
                 prop_cycle=(
-                    cycler("color", ["r", "g", "b", "y"])
-                    + cycler("linestyle", ["-", "--", ":", "-."])
+                    cycler("color", c)
+                    + cycler("linestyle", l)
                 ),
             )
 

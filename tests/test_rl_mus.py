@@ -2,19 +2,19 @@ import time
 from matplotlib import pyplot as plt
 import numpy as np
 import unittest
+import context
 from rl_mus.agents.agents import UavCtrlType
 
 from rl_mus.envs.rl_mus import RlMus
 from rl_mus.utils.plot_utils import Plotter
-
+from ray.rllib.utils import check_env
 
 class TestRlMus(unittest.TestCase):
     def setUp(self):
         pass
 
-    # def test_reset(self):
-    #     self.env = RlMus()
-    #     obs, info = self.env.reset()
+    def test_check_env(self):
+        check_env(RlMus({}))
 
     # def test_render(self):
     #     self.env = RlMus(env_config={"renders": True})
@@ -882,5 +882,26 @@ class TestRlMus(unittest.TestCase):
     #     self.assertTrue((obstacle_collisions == 0).all())
 
 
+# Everything below is to make sure that the tests are run in a specific order.
+def suite():
+    suite = unittest.TestSuite()
+    suite.addTest(TestRlMus("test_check_env"))
+    # suite.addTest(TestRlMus("test_02_temper_std_atm_prop"))
+    # suite.addTest(TestRlMus("test_03_temper_fig_3_evap_duct"))
+    # suite.addTest(TestRlMus("test_04_temper_fig_4_sub_refrac"))
+    # suite.addTest(TestRlMus("test_05_temper_fig_5_super_refrac"))
+    # suite.addTest(TestRlMus("test_06_temp_fig_07_snr"))
+
+    return suite
+
+
 if __name__ == "__main__":
-    unittest.main()
+    """
+    verbosity determines the output from the test:
+     0: quite, no output
+     1: default
+     2: verbose, get help string from the output
+    """
+
+    runner = unittest.TextTestRunner(verbosity=2)
+    runner.run(suite())

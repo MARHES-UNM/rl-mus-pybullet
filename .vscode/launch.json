@@ -5,6 +5,30 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "run_experiment",
+            "type": "python",
+            "request": "launch",
+            "program": "${cwd}/run_experiment.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "args": [
+            ]
+        },
+        {
+            "name": "test_rl_mus",
+            "type": "python",
+            "request": "launch",
+            "program": "${cwd}/tests/test_rl_mus.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-v",
+                "--failfast"
+            ]
+        },
+        {
             "name": "test_uav",
             "type": "python",
             "request": "launch",
@@ -40,19 +64,6 @@
             "args": [
                 "-v",
                 "${cwd}/tests/test_plotter.py",
-                "--failfast"
-            ]
-        },
-        {
-            "name": "test_rl_mus",
-            "type": "python",
-            "request": "launch",
-            "module": "unittest",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}",
-            "args": [
-                "-v",
-                "${cwd}/tests/test_rl_mus.py",
                 "--failfast"
             ]
         },

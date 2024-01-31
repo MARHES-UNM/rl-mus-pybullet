@@ -3,19 +3,17 @@ from datetime import datetime
 from time import time
 from matplotlib import pyplot as plt
 import numpy as np
-import ray
-from uav_sim.envs.uav_sim import UavSim
+from rl_mus.envs.rl_mus import RlMus
 from pathlib import Path
+from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
+from rl_mus.utils.env_utils import get_git_hash
 
 import os
 import logging
 import json
-from uav_sim.utils.safety_layer import SafetyLayer
-from ray import tune
-from plot_results import plot_uav_states
+from rl_mus.utils.plot_utils import Plotter
 
-from uav_sim.utils.utils import get_git_hash
 
 PATH = Path(__file__).parent.absolute().resolve()
 logger = logging.getLogger(__name__)
@@ -53,7 +51,7 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
     render = exp_config["render"]
     plot_results = exp_config["plot_results"]
 
-    env = UavSim(env_config)
+    env = RlMus(env_config)
 
     algo_to_run = exp_config["exp_config"].setdefault("run", "PPO")
     if algo_to_run not in ["cc", "PPO"]:
@@ -64,9 +62,8 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
         checkpoint = exp_config["exp_config"].setdefault("checkpoint", None)
 
         # Reload the algorithm as is from training.
-        # if checkpoint is not None:
-        # algo = Algorithm.from_checkpoint(checkpoint)
         if checkpoint is not None:
+
             # use policy here instead of algorithm because it's more efficient
             use_policy = True
             from ray.rllib.policy.policy import Policy
@@ -76,7 +73,7 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
 
             # need preprocesor here if using policy
             # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
-            prep = get_preprocessor(env.observation_space[0])(env.observation_space[0])
+            prep = get_preprocessor(env.observation_space[env.first_uav_id])(env.observation_space[env.first_uav_id])
         else:
             use_policy = False
             algo = (
@@ -96,8 +93,8 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
                     policies={
                         "shared_policy": (
                             None,
-                            env.observation_space[0],
-                            env.action_space[0],
+                            env.observation_space[env.first_uav_id],
+                            env.action_space[env.first_uav_id],
                             {},
                         )
                     },
@@ -111,8 +108,8 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
             # restore algorithm if need be:
             # algo.restore(checkpoint)
 
-    if exp_config["exp_config"]["safe_action_type"] == "nn_cbf":
-        sl = SafetyLayer(env, exp_config["safety_layer_cfg"])
+    # if exp_config["exp_config"]["safe_action_type"] == "nn_cbf":
+    #     sl = SafetyLayer(env, exp_config["safety_layer_cfg"])
 
     time_step_list = []
     uav_collision_list = [[] for idx in range(env.num_uavs)]
@@ -153,8 +150,8 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
     }
 
     num_episodes = 0
-    env_out, done = env.reset(), {i.id: False for i in env.uavs.values()}
-    obs, info = env_out
+    (obs, info), done = env.reset(), {i.id: False for i in env.uavs.values()}
+
     done["__all__"] = False
 
     logger.debug("running experiment")
@@ -163,11 +160,12 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
 
     while num_episodes < max_num_episodes:
         actions = {}
-        for idx in range(env.num_uavs):
+        for uav in env.uavs.values():
+
+            idx = uav.id
             # classic control
             if algo_to_run == "cc":
                 actions[idx] = env.get_time_coord_action(env.uavs[idx])
-                # actions[idx] = env.get_tc_controller(env.uavs[idx])
             elif algo_to_run == "PPO":
                 if use_policy:
                     actions[idx] = algo.compute_single_action(prep.transform(obs[idx]))[
@@ -338,7 +336,7 @@ def main():
             args.config["env_name"] = args.env_name
             tune.register_env(
                 args.config["env_name"],
-                lambda env_config: UavSim(env_config=env_config),
+                lambda env_config: RlMus(env_config=env_config),
             )
 
     logger.debug(f"config: {args.config}")

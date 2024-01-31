@@ -106,7 +106,7 @@ class RlMus(MultiAgentEnv):
         else:
             num_obstacle_shape = self.obstacles[0].state.shape[0]
 
-        num_uav_state_shape = self.uavs[self._first_uav_id].state.shape
+        num_uav_state_shape = self.uavs[self.first_uav_id].state.shape
 
         obs_space = spaces.Dict(
             {
@@ -674,7 +674,7 @@ class RlMus(MultiAgentEnv):
         self._agent_ids = set()
 
         # we need the first uav id for some housekeeping
-        self._first_uav_id = None
+        self.first_uav_id = None
         self.uavs = {}
         self.targets = {}
         self.obstacles = []
@@ -699,8 +699,8 @@ class RlMus(MultiAgentEnv):
                 g=self.g,
                 ctrl_type=self.uav_ctrl_type,
             )
-            if self._first_uav_id is None:
-                self._first_uav_id = uav.id
+            if self.first_uav_id is None:
+                self.first_uav_id = uav.id
 
             self._agent_ids.add(uav.id)
 
@@ -753,9 +753,9 @@ class RlMus(MultiAgentEnv):
         self.norm_action_high = np.ones(3)
         self.norm_action_low = np.ones(3) * -1
 
-        self.action_high = self.uavs[self._first_uav_id].action_high
-        self.action_low = self.uavs[self._first_uav_id].action_low
-        self.num_actions = self.uavs[self._first_uav_id].num_actions
+        self.action_high = self.uavs[self.first_uav_id].action_high
+        self.action_low = self.uavs[self.first_uav_id].action_low
+        self.num_actions = self.uavs[self.first_uav_id].num_actions
 
         obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
         # we need to call reward here so that info items will get populated
@@ -860,4 +860,4 @@ class RlMus(MultiAgentEnv):
         if self._physics_client_id is not None:
             self._p.disconnect()
         self._physics_client_id = None
-        self._first_uav_id = None
+        self.first_uav_id = None

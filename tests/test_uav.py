@@ -3,7 +3,7 @@ import unittest
 import pybullet as p
 import pybullet_data
 from rl_mus.agents.agents import Entity, Uav, UavCtrlConf, UavCtrlType
-from rl_mus.utils.logger import Plotter, plot_traj
+from rl_mus.utils.logger import UavLogger, plot_traj
 import time
 import numpy as np
 from rl_mus.utils.math_utils import wrap_angle
@@ -70,7 +70,7 @@ class TestUav(unittest.TestCase):
             start_pos, start_rpy, client=self.client, ctrl_type=UavCtrlType.RPM
         )
 
-        plotter = Plotter(ctrl_type=UavCtrlType.RPM)
+        plotter = UavLogger(ctrl_type=UavCtrlType.RPM)
         plotter.add_uav(self.uav.id)
 
         rpms_des = np.zeros(4)
@@ -79,7 +79,7 @@ class TestUav(unittest.TestCase):
             self.uav.step(rpms_des)
             p.stepSimulation()
 
-            plotter.log(self.uav.id, state=self.uav.state, ref_ctrl=rpms_des)
+            plotter.log(self.uav.id, state=self.uav.state, action=rpms_des)
 
         plotter.plot(plt_ctrl=True, title="Test Desired RPMs to Hover.")
 
@@ -89,7 +89,7 @@ class TestUav(unittest.TestCase):
             [1, 0, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
         )
 
-        plotter = Plotter(ctrl_type=UavCtrlType.VEL)
+        plotter = UavLogger(ctrl_type=UavCtrlType.VEL)
         plotter.add_uav(self.uav.id)
 
         vel_des = np.zeros(3)
@@ -107,7 +107,7 @@ class TestUav(unittest.TestCase):
             [3, 2, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
         )
 
-        plotter = Plotter()
+        plotter = UavLogger()
         plotter.add_uav(self.uav.id)
 
         vel_des = np.zeros(3)
@@ -141,7 +141,7 @@ class TestUav(unittest.TestCase):
             self.uav.step(vel_des)
             p.stepSimulation()
 
-            plotter.log(self.uav.id, state=self.uav.state, ref_ctrl=vel_des)
+            plotter.log(self.uav.id, state=self.uav.state, action=vel_des)
 
         plotter.plot(title="Test UAV velocity control", plt_ctrl=True)
 
@@ -151,7 +151,7 @@ class TestUav(unittest.TestCase):
             [0, 0, 0.5], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
         )
 
-        plotter = Plotter()
+        plotter = UavLogger()
         plotter.add_uav(self.uav.id)
 
         time_to_change_vel = 2 * 240  # every 2 secs
@@ -163,7 +163,7 @@ class TestUav(unittest.TestCase):
 
             self.uav.step(vel_des)
             p.stepSimulation()
-            plotter.log(uav_id=self.uav.id, state=self.uav.state, ref_ctrl=vel_des)
+            plotter.log(uav_id=self.uav.id, state=self.uav.state, action=vel_des)
 
         plotter.plot(title="Test Random Velocity Tracking", plt_ctrl=True)
 
@@ -176,7 +176,7 @@ class TestUav(unittest.TestCase):
             [0, 0, 2], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.POS
         )
 
-        plotter = Plotter(ctrl_type=UavCtrlType.POS)
+        plotter = UavLogger(ctrl_type=UavCtrlType.POS)
         plotter.add_uav(self.uav.id)
         action = np.zeros(4)
 
@@ -192,7 +192,7 @@ class TestUav(unittest.TestCase):
             self.uav.step(action)
             p.stepSimulation()
             plotter.log(
-                uav_id=self.uav.id, state=self.uav.state.copy(), ref_ctrl=action.copy()
+                uav_id=self.uav.id, state=self.uav.state.copy(), action=action.copy()
             )
 
         plotter.plot(title="Test Circular Velocity Tracking", plt_ctrl=True)
@@ -202,7 +202,7 @@ class TestUav(unittest.TestCase):
             [0, 0, 0.5], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
         )
 
-        plotter = Plotter(ctrl_type=UavCtrlType.VEL)
+        plotter = UavLogger(ctrl_type=UavCtrlType.VEL)
         plotter.add_uav(self.uav.id)
         action = np.zeros(3)
         # this determines how fast to complete a circle
@@ -216,7 +216,7 @@ class TestUav(unittest.TestCase):
             self.uav.step(action)
             p.stepSimulation()
             plotter.log(
-                uav_id=self.uav.id, state=self.uav.state.copy(), ref_ctrl=action.copy()
+                uav_id=self.uav.id, state=self.uav.state.copy(), action=action.copy()
             )
 
         plotter.plot(title="Test Helix Using Velocity Tracking", plt_ctrl=True)

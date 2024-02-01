@@ -12,7 +12,7 @@ from rl_mus.utils.env_utils import get_git_hash
 import os
 import logging
 import json
-from rl_mus.utils.logger import Plotter
+from rl_mus.utils.logger import UavLogger
 
 
 PATH = Path(__file__).parent.absolute().resolve()

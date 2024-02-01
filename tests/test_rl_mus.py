@@ -7,7 +7,7 @@ import context
 from rl_mus.agents.agents import UavCtrlType
 
 from rl_mus.envs.rl_mus import RlMus
-from rl_mus.utils.logger import Plotter
+from rl_mus.utils.logger import UavLogger
 from ray.rllib.utils import check_env
 from rl_mus.utils.logger import EnvLogger
 
@@ -77,6 +77,8 @@ class TestRlMus(unittest.TestCase):
 
         self.assertEqual(env_logger.num_samples, num_seconds / env_logger.log_freq)
 
+        env_logger.plot(plt_action=True)
+
     def test_random_action_sample(self):
         env = RlMus(env_config={"renders": True, "num_uavs": 4})
         obs, info = env.reset()
@@ -98,7 +100,7 @@ class TestRlMus(unittest.TestCase):
         )
         obs, info = env.reset()
 
-        plotter = Plotter(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
+        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
 
         for uav in env.uavs.values():
             plotter.add_uav(uav.id)
@@ -115,7 +117,7 @@ class TestRlMus(unittest.TestCase):
             time.sleep(1 / 240)
 
             for uav in env.uavs.values():
-                plotter.log(uav_id=uav.id, ref_ctrl=actions[uav.id], state=uav.state)
+                plotter.log(uav_id=uav.id, action=actions[uav.id], state=uav.state)
 
         plotter.plot(plt_ctrl=True)
         env.close()
@@ -130,7 +132,7 @@ class TestRlMus(unittest.TestCase):
         )
         obs, info = env.reset()
 
-        plotter = Plotter(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
+        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
 
         for uav in env.uavs.values():
             plotter.add_uav(uav.id)
@@ -146,7 +148,7 @@ class TestRlMus(unittest.TestCase):
             time.sleep(1 / 240)
 
             for uav in env.uavs.values():
-                plotter.log(uav_id=uav.id, ref_ctrl=actions[uav.id], state=uav.state)
+                plotter.log(uav_id=uav.id, action=actions[uav.id], state=uav.state)
 
         plotter.plot(plt_ctrl=True)
 

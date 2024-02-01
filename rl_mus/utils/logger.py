@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from cycler import cycler
-
+from copy import deepcopy
 from rl_mus.agents.agents import UavCtrlType
 
 class BaseLogger(object):
@@ -30,81 +30,28 @@ class BaseLogger(object):
     def data(self):
         return self._data
 
-class EnvLogger(BaseLogger):
-    def __init__(self, num_uavs=1, log_config={}) -> None:
-
-        self._log_config = log_config
-        log_freq = self._log_config.setdefault("log_freq", 10)
-
+class UavLogger(BaseLogger):
+    def __init__(self, num_uavs=1, log_freq=10, ctrl_type=UavCtrlType.VEL) -> None:
+        self.ctrl_type = ctrl_type
+        
         super().__init__(num_uavs=num_uavs, log_freq=log_freq)
 
-        self.parse_log_config()
-
-    def parse_log_config(self):
-        self._obs_items = self._log_config.setdefault("obs_items", ["state"])
-        self._log_reward = self._log_config.setdefault("log_reward", False)
-        self._info_items = self._log_config.setdefault("info_items", [])
-
+        # used for converting the uav_id to array index
         self._data = {}
-        self._data['eps_num'] = []
-        data_dictionary = {}
+        self._data['log'] = [{"action": [], "state": []} for i in range(self.num_uavs)]
 
-        for key in self._obs_items:
-            data_dictionary[key] = []
-        for key in self._info_items:
-            data_dictionary[key] = []
-        if self._log_reward:
-            data_dictionary['reward'] = []
-        data_dictionary['action'] = []
-
-        self._data['log'] = [data_dictionary for i in range(self.num_uavs)]
-
-    def log(self, eps_num, info, obs, reward, action):
-        
-        self._data['eps_num'].append(eps_num)
-
-        for uav_id, value in obs.items():
-            array_idx = self.uav_ids[uav_id]
-
-            for k, v in value.items():
-                if k in self._obs_items:
-                    self.data['log'][array_idx][k].append(v)
-
-            for k, v in info[uav_id].items():
-                if k in self._info_items:
-                    self.data['log'][array_idx][k].append(v)
-
-            if self._log_reward:
-                self.data['log'][array_idx]['reward'].append(reward[uav_id])
-            
-            self.data['log'][array_idx]['action'].append(action[uav_id])
+    def log(self, uav_id, state, action):
+        array_idx = self.uav_ids[uav_id]
+        self._data['log'][array_idx]["state"].append(state)
+        self._data['log'][array_idx]["action"].append(action)
 
     @property
     def num_samples(self):
-        return len(self.data['eps_num'])
+        self._num_samples = self._data['log'][0]['state'].shape[0]
 
-class Plotter:
-    def __init__(self, num_uavs=1, ctrl_type=UavCtrlType.VEL, freq=240) -> None:
-        self.ctrl_type = ctrl_type
-        self.num_uavs = num_uavs
+        return self._num_samples
 
-        # used for converting the uav_id to array index
-        self.uav_ids = {}
-        self._data = [{"ctrl": [], "state": []} for i in range(self.num_uavs)]
-        self.num_time_steps = 0
-        self.freq = freq
-        self.uav_counter = 0
-
-    def add_uav(self, uav_id):
-        self.uav_ids[uav_id] = self.uav_counter
-        self.uav_counter += 1
-
-    def log(self, uav_id, state, ref_ctrl):
-        array_idx = self.uav_ids[uav_id]
-        self._data[array_idx]["state"].append(state)
-        self._data[array_idx]["ctrl"].append(ref_ctrl)
-
-    def plot(self, title="", plt_ctrl=False):
+    def plot(self, title="", plt_action=False):
         if self.num_uavs > 1 and self.num_uavs <= 4:
             colors = ["r", "g", "b", "y"]
             linestyle = ["-", "--", ":", "-."]
@@ -128,12 +75,12 @@ class Plotter:
         self.fig.suptitle(title)
 
         # convert data to numpy arrays
-        for uav_id in range(self.num_uavs):
-            self._data[uav_id]["state"] = np.array(self._data[uav_id]["state"])
-            self._data[uav_id]["ctrl"] = np.array(self._data[uav_id]["ctrl"])
+        # for uav_id in range(self.num_uavs):
+        for uav_id, idx in self.uav_ids.items():
+            self._data['log'][idx]["state"] = np.array(self._data['log'][idx]["state"])
+            self._data['log'][idx]["action"] = np.array(self._data['log'][idx]["action"])
 
-        self.num_time_steps = self._data[0]["state"].shape[0]
-
+        self._num_samples = self._data['log'][0]['state'].shape[0]
         col = 0
         # x, y, z
         row = 0
@@ -182,40 +129,40 @@ class Plotter:
         row = 7
         self.plot_uav_data(row, col, 19, ylabel="RPM3")
 
-        if plt_ctrl:
+        if plt_action:
             if self.ctrl_type == UavCtrlType.VEL:
                 col = 1
                 row = 0
-                self.plot_uav_data(row, col, 0, data_type="ctrl", ylabel="vx (m/s)")
+                self.plot_uav_data(row, col, 0, data_type="action", ylabel="vx (m/s)")
                 row = 1
-                self.plot_uav_data(row, col, 1, data_type="ctrl", ylabel="vy (m/s)")
+                self.plot_uav_data(row, col, 1, data_type="action", ylabel="vy (m/s)")
                 row = 2
-                self.plot_uav_data(row, col, 2, data_type="ctrl", ylabel="vz (m/s)")
+                self.plot_uav_data(row, col, 2, data_type="action", ylabel="vz (m/s)")
 
             elif self.ctrl_type == UavCtrlType.POS:
                 col = 0
                 row = 0
-                self.plot_uav_data(row, col, 0, data_type="ctrl", ylabel="x (m)")
+                self.plot_uav_data(row, col, 0, data_type="action", ylabel="x (m)")
                 row = 1
-                self.plot_uav_data(row, col, 1, data_type="ctrl", ylabel="y (m)")
+                self.plot_uav_data(row, col, 1, data_type="action", ylabel="y (m)")
                 row = 2
-                self.plot_uav_data(row, col, 2, data_type="ctrl", ylabel="z (m)")
+                self.plot_uav_data(row, col, 2, data_type="action", ylabel="z (m)")
                 row = 5
-                self.plot_uav_data(row, col, 3, data_type="ctrl", ylabel="$\psi$ (rad)")
+                self.plot_uav_data(row, col, 3, data_type="action", ylabel="$\psi$ (rad)")
 
             elif self.ctrl_type == UavCtrlType.RPM:
                 # RPMS
                 col = 0
                 row = 6
-                self.plot_uav_data(row, col, 0, data_type="ctrl", ylabel="RPM0")
+                self.plot_uav_data(row, col, 0, data_type="action", ylabel="RPM0")
                 row = 7
-                self.plot_uav_data(row, col, 1, data_type="ctrl", ylabel="RPM1")
+                self.plot_uav_data(row, col, 1, data_type="action", ylabel="RPM1")
 
                 col = 1
                 row = 6
-                self.plot_uav_data(row, col, 2, data_type="ctrl", ylabel="RPM2")
+                self.plot_uav_data(row, col, 2, data_type="action", ylabel="RPM2")
                 row = 7
-                self.plot_uav_data(row, col, 3, data_type="ctrl", ylabel="RPM3")
+                self.plot_uav_data(row, col, 3, data_type="action", ylabel="RPM3")
 
         for row in range(num_rows):
             for col in range(num_cols):
@@ -234,15 +181,68 @@ class Plotter:
         data_type="state",
         ylabel="",
     ):
-        t = np.arange(self.num_time_steps) / self.freq
-        for i in range(self.num_uavs):
+        t = np.arange(self._num_samples) / self.log_freq
+        for uav_id, idx in self.uav_ids.items():
             self.axs[row, col].plot(
-                t, self._data[i][data_type][:, data_idx], label=f"uav_{i}"
+                t, self._data['log'][idx][data_type][:, data_idx], label=f"uav_{uav_id}"
             )
         self.axs[row, col].set_xlabel("t (s)")
         self.axs[row, col].set_ylabel(ylabel)
 
+class EnvLogger(UavLogger):
+    def __init__(self, num_uavs=1, log_config={}) -> None:
 
+        self._log_config = log_config
+        log_freq = self._log_config.setdefault("log_freq", 10)
+        uav_ctrl_type = self._log_config.setdefault("uav_ctrl_type", UavCtrlType.VEL)
+
+        super().__init__(num_uavs=num_uavs, log_freq=log_freq, ctrl_type=uav_ctrl_type)
+
+        self.parse_log_config()
+
+    def parse_log_config(self):
+        self._obs_items = self._log_config.setdefault("obs_items", ["state"])
+        self._log_reward = self._log_config.setdefault("log_reward", False)
+        self._info_items = self._log_config.setdefault("info_items", [])
+
+        self._data = {}
+        self._data['eps_num'] = []
+        data_dictionary = {}
+
+        for key in self._obs_items:
+            data_dictionary[key] = []
+        for key in self._info_items:
+            data_dictionary[key] = []
+        if self._log_reward:
+            data_dictionary['reward'] = []
+        data_dictionary['action'] = []
+
+        self._data['log'] = [deepcopy(data_dictionary) for i in range(self.num_uavs)]
+
+    def log(self, eps_num, info, obs, reward, action):
+        
+        self._data['eps_num'].append(eps_num)
+
+        for uav_id, value in obs.items():
+            array_idx = self.uav_ids[uav_id]
+
+            for k, v in value.items():
+                if k in self._obs_items:
+                    self.data['log'][array_idx][k].append(v)
+
+            for k, v in info[uav_id].items():
+                if k in self._info_items:
+                    self.data['log'][array_idx][k].append(v)
+
+            if self._log_reward:
+                self.data['log'][array_idx]['reward'].append(reward[uav_id])
+            
+            self.data['log'][array_idx]['action'].append(action[uav_id])
+
+    @property
+    def num_samples(self):
+        return len(self.data['eps_num'])
+    
 def plot_traj(uav_des_traj, uav_trajectory, title="", scale=240.0):
     fig, axs = plt.subplots(4, 2, sharex=False, figsize=(12, 10), layout="constrained")
     t_axis = np.arange(uav_trajectory.shape[0]) / scale

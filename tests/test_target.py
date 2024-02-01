@@ -3,7 +3,7 @@ import unittest
 import pybullet as p
 import pybullet_data
 from rl_mus.agents.agents import Entity, Uav, UavCtrlType, Target
-from rl_mus.utils.logger import Plotter
+from rl_mus.utils.logger import UavLogger
 import time
 import numpy as np
 

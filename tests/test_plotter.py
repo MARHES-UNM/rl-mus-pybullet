@@ -3,7 +3,7 @@ import unittest
 import pybullet as p
 import pybullet_data
 from rl_mus.agents.agents import Entity, Uav, UavCtrlType
-from rl_mus.utils.logger import Plotter
+from rl_mus.utils.logger import UavLogger
 import time
 import numpy as np
 
@@ -20,7 +20,7 @@ class TestPlotter(unittest.TestCase):
 
     # @unittest.skip
     def test_plotter_1_uav(self):
-        plotter = Plotter(num_uavs=1)
+        plotter = UavLogger(num_uavs=1)
 
         start_pos = [0, 0, 1]
         start_rpy = [0, 0, 0]
@@ -36,12 +36,12 @@ class TestPlotter(unittest.TestCase):
             ref_ctrl = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
             self.uav.step(ref_ctrl)
             p.stepSimulation()
-            plotter.log(uav_id=self.uav.id, ref_ctrl=ref_ctrl, state=self.uav.state)
+            plotter.log(uav_id=self.uav.id, action=ref_ctrl, state=self.uav.state)
 
         plotter.plot(plt_ctrl=True)
 
     def test_plotter_multi_uav(self):
-        plotter = Plotter(num_uavs=2)
+        plotter = UavLogger(num_uavs=2)
 
         uav_1 = Uav([0, 0, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL)
 
@@ -62,8 +62,8 @@ class TestPlotter(unittest.TestCase):
             uav_2.step(ref_ctrl2)
 
             p.stepSimulation()
-            plotter.log(uav_id=uav_1.id, ref_ctrl=ref_ctrl1, state=uav_1.state)
-            plotter.log(uav_id=uav_2.id, ref_ctrl=ref_ctrl2, state=uav_2.state)
+            plotter.log(uav_id=uav_1.id, action=ref_ctrl1, state=uav_1.state)
+            plotter.log(uav_id=uav_2.id, action=ref_ctrl2, state=uav_2.state)
 
         plotter.plot()
 

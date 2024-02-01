@@ -1,3 +1,4 @@
+from logging import Logger
 import time
 from matplotlib import pyplot as plt
 import numpy as np
@@ -6,8 +7,10 @@ import context
 from rl_mus.agents.agents import UavCtrlType
 
 from rl_mus.envs.rl_mus import RlMus
-from rl_mus.utils.plot_utils import Plotter
+from rl_mus.utils.logger import Plotter
 from ray.rllib.utils import check_env
+from rl_mus.utils.logger import EnvLogger
+
 
 class TestRlMus(unittest.TestCase):
     def setUp(self):
@@ -46,6 +49,33 @@ class TestRlMus(unittest.TestCase):
     #     self.assertEqual(len(obs_space.spaces), 2)
     #     self.assertEqual(obs_space[0]["obstacles"].shape[0], 1)
     #     self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 1)
+
+    def test_log_env(self):
+        env = RlMus(env_config={"num_uavs": 4})
+        log_config = {"obs_items": ["state", "target"], "info_items": ["uav_collision"], "log_freq": 10, "env_freq": 240}
+
+        env_logger = EnvLogger(
+            num_uavs=env.num_uavs, log_config=log_config
+        )
+        for uav in env.uavs.values():
+            env_logger.add_uav(uav.id)
+
+        obs, info = env.reset()
+        num_seconds = 1 * env.env_freq
+
+        eps_num = 0
+        for sec in range(num_seconds):
+            actions = env.action_space.sample()
+
+            obs, reward, done, truncated, info = env.step(actions)
+
+            if sec % env_logger.log_freq == 0:
+                env_logger.log(eps_num=eps_num, info=info, obs=obs, reward=reward, action=actions)
+
+            if done["__all__"]:
+                obs, info = env.reset()
+
+        self.assertEqual(env_logger.num_samples, num_seconds / env_logger.log_freq)
 
     def test_random_action_sample(self):
         env = RlMus(env_config={"renders": True, "num_uavs": 4})
@@ -885,12 +915,13 @@ class TestRlMus(unittest.TestCase):
 # Everything below is to make sure that the tests are run in a specific order.
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(TestRlMus("test_check_env"))
+    # suite.addTest(TestRlMus("test_check_env"))
     # suite.addTest(TestRlMus("test_02_temper_std_atm_prop"))
     # suite.addTest(TestRlMus("test_03_temper_fig_3_evap_duct"))
     # suite.addTest(TestRlMus("test_04_temper_fig_4_sub_refrac"))
     # suite.addTest(TestRlMus("test_05_temper_fig_5_super_refrac"))
     # suite.addTest(TestRlMus("test_06_temp_fig_07_snr"))
+    suite.addTest(TestRlMus("test_log_env"))
 
     return suite
 

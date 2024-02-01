@@ -84,6 +84,10 @@ class RlMus(MultiAgentEnv):
         self.action_space = self._get_action_space()
         self.observation_space = self._get_observation_space()
 
+    @property
+    def env_freq(self):
+        return self._pyb_freq
+
     def _get_action_space(self):
         """The action of the UAV. We don't normalize the action space in this environment.
         It is recommended to normalize using a wrapper function.

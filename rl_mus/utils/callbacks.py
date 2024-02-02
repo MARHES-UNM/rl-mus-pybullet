@@ -8,6 +8,11 @@ from ray.rllib.policy import Policy
 
 
 class TrainCallback(DefaultCallbacks):
+    """Add optional callbacks during training
+    https://github.com/ray-project/ray/blob/ray-2.6.3/rllib/examples/custom_metrics_and_callbacks.py
+
+    """
+
     def on_episode_start(
         self,
         *,
@@ -24,17 +29,9 @@ class TrainCallback(DefaultCallbacks):
             "ERROR: `on_episode_start()` callback should be called right "
             "after env reset!"
         )
-        # print("episode {} (env-idx={}) started.".format(episode.episode_id, env_index))
-
-        # TODO: add callback for dt_go: https://github.com/ray-project/ray/blob/ray-2.6.3/rllib/examples/custom_metrics_and_callbacks.py
         episode.user_data["obstacle_collisions"] = []
         episode.user_data["uav_collisions"] = []
         episode.user_data["uav_dt_go"] = []
-        # episode.user_data["num_uav_landed"] = []
-        # episode.user_data["uav_done_dt"] = []
-        # episode.user_data["uav_rel_dist"] = []
-
-        # episode.user_data["uav_dt_go"] = []
 
     def on_episode_step(
         self,
@@ -57,7 +54,6 @@ class TrainCallback(DefaultCallbacks):
         cum_uav_dt_go = 0
 
         for agent_id in agent_ids:
-            # last_info = episode.last_info_for(agent_id)
             last_info = episode._last_infos[agent_id]
             cum_uav_collisions += last_info["uav_collision"]
             cum_obstacle_collisions += last_info["obstacle_collision"]

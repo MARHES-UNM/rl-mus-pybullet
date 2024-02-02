@@ -7,11 +7,13 @@
     https://github.com/bulletphysics/bullet3/blob/master/examples/pybullet/gym/pybullet_envs/bullet/cartpole_bullet.py
 [x] confirm mixin matrix
 [x] used x configurration instead of plus configuration
-[ ] test out the environment
+[x] test out the environment
 [ ] add obstacle to environment
 [ ] plot environment specific items (rewards, target reached, dt time, number of collisions)
 [ ] Train with RL lib
     https://colab.research.google.com/drive/1sTGKVldqzQf5R2kyBrmBkvdk6-bptFEJ#scrollTo=C4_iJOkEsMwv
+[] Turn environment into python package
+    https://packaging.python.org/en/latest/tutorials/packaging-projects/
 
 
 This repo is mostly a refactor of the works done in [gym-pybullet-drones
@@ -27,13 +29,10 @@ The velocity control law is mostly derived from [here](https://citeseerx.ist.psu
 Similar Repos:
 Quadswarm: https://imrclab.github.io/workshop-uav-sims-icra2023/papers/RS4UAVs_paper_16.pdf
 https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master
-
-
 ### 
 Install pytorch: 
 https://pytorch.org/get-started/locally/
 install pytorch (CUDA):
-
 
 Dynamics of the crazyflie:
 https://arxiv.org/pdf/1608.05786.pdf

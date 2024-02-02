@@ -12,7 +12,7 @@ p.setGravity(0,0,-10)
 planeId = p.loadURDF("plane.urdf")
 startPos = [0,0,1]
 startOrientation = p.getQuaternionFromEuler([0,0,0])
-boxId = p.loadURDF(str(script_path.joinpath(r"../rl-mus-pybullet/assets/cf2p.urdf")), startPos, startOrientation)
+boxId = p.loadURDF(str(script_path.joinpath(r"../rl_mus/assets/cf2p.urdf")), startPos, startOrientation)
 #set the center of mass frame (loadURDF sets base link frame) startPos/Ornp.resetBasePositionAndOrientation(boxId, startPos, startOrientation)
 for i in range (10000):
     p.stepSimulation()

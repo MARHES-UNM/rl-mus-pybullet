@@ -159,7 +159,7 @@ def train(args):
         .environment(
             env=args.env_name,
             env_config=args.config["env_config"],
-            env_task_fn=curriculum_fn,
+            # env_task_fn=curriculum_fn,
         )
         .framework(args.framework)
         # .callbacks(multi_callbacks)
@@ -294,6 +294,7 @@ if __name__ == "__main__":
     if args.load_config:
         with open(args.load_config, "rt") as f:
             args.config = json.load(f)
+
     if not args.log_dir:
         branch_hash = get_git_hash()
 
@@ -311,5 +312,4 @@ if __name__ == "__main__":
 
     register_env(args.env_name, lambda env_config: CurriculumEnv(env_config))
 
-    # check_env(CurriculumEnv(env_config))
     train(args)

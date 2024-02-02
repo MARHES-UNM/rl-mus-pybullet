@@ -81,7 +81,7 @@ class TestUav(unittest.TestCase):
 
             plotter.log(self.uav.id, state=self.uav.state, action=rpms_des)
 
-        plotter.plot(plt_ctrl=True, title="Test Desired RPMs to Hover.")
+        plotter.plot(plt_action=True, title="Test Desired RPMs to Hover.")
 
     # @unittest.skip
     def test_uav_hover_vel(self):
@@ -99,7 +99,7 @@ class TestUav(unittest.TestCase):
 
             plotter.log(self.uav.id, self.uav.state, vel_des)
 
-        plotter.plot("Test UAV Hover Velocity", plt_ctrl=True)
+        plotter.plot("Test UAV Hover Velocity", plt_action=True)
 
     # @unittest.skip
     def test_uav_vel_tracking(self):
@@ -143,7 +143,7 @@ class TestUav(unittest.TestCase):
 
             plotter.log(self.uav.id, state=self.uav.state, action=vel_des)
 
-        plotter.plot(title="Test UAV velocity control", plt_ctrl=True)
+        plotter.plot(title="Test UAV velocity control", plt_action=True)
 
     # @unittest.skip
     def test_uav_rand_vel_tracking(self):
@@ -165,7 +165,7 @@ class TestUav(unittest.TestCase):
             p.stepSimulation()
             plotter.log(uav_id=self.uav.id, state=self.uav.state, action=vel_des)
 
-        plotter.plot(title="Test Random Velocity Tracking", plt_ctrl=True)
+        plotter.plot(title="Test Random Velocity Tracking", plt_action=True)
 
     # @unittest.skip
     def test_uav_circular_traj(self):
@@ -195,7 +195,7 @@ class TestUav(unittest.TestCase):
                 uav_id=self.uav.id, state=self.uav.state.copy(), action=action.copy()
             )
 
-        plotter.plot(title="Test Circular Velocity Tracking", plt_ctrl=True)
+        plotter.plot(title="Test Circular Velocity Tracking", plt_action=True)
 
     def test_uav_helix_vel_tracking(self):
         self.uav = Uav(
@@ -219,7 +219,7 @@ class TestUav(unittest.TestCase):
                 uav_id=self.uav.id, state=self.uav.state.copy(), action=action.copy()
             )
 
-        plotter.plot(title="Test Helix Using Velocity Tracking", plt_ctrl=True)
+        plotter.plot(title="Test Helix Using Velocity Tracking", plt_action=True)
 
 
 if __name__ == "__main__":

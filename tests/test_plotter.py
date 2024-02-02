@@ -38,7 +38,7 @@ class TestPlotter(unittest.TestCase):
             p.stepSimulation()
             plotter.log(uav_id=self.uav.id, action=ref_ctrl, state=self.uav.state)
 
-        plotter.plot(plt_ctrl=True)
+        plotter.plot(plt_action=True)
 
     def test_plotter_multi_uav(self):
         plotter = UavLogger(num_uavs=2)

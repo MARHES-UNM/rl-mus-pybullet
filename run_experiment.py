@@ -8,6 +8,7 @@ from pathlib import Path
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
 from rl_mus.utils.env_utils import get_git_hash
+from rl_mus.utils.logger import EnvLogger
 
 import os
 import logging
@@ -33,26 +34,23 @@ def setup_stream(logging_level=logging.DEBUG):
     logger.setLevel(logging_level)
 
 
-formatter = "%(asctime)s: %(name)s - %(levelname)s - <%(module)s:%(funcName)s:%(lineno)d> - %(message)s"
-logging.basicConfig(
-    # filename=os.path.join(app_log_path, log_file_name),
-    format=formatter
-)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-max_num_cpus = os.cpu_count() - 1
-
-
 def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
     fname = exp_config.setdefault("fname", None)
     write_experiment = exp_config.setdefault("write_experiment", False)
     env_config = exp_config["env_config"]
-    render = exp_config["render"]
     plot_results = exp_config["plot_results"]
+    log_config = exp_config["logger_config"]
 
-    env = RlMus(env_config)
+    # Need to create a temporary environment to get obs and action space
+    renders = env_config["renders"]
+    env_config['renders'] = False
+    temp_env = RlMus(env_config)
+    env_obs_space = temp_env.observation_space[temp_env.first_uav_id]
+    env_action_space = temp_env.action_space[temp_env.first_uav_id]
+    temp_env.close()
+    env_config['renders'] = renders
 
+    # get the algorithm or policy to run
     algo_to_run = exp_config["exp_config"].setdefault("run", "PPO")
     if algo_to_run not in ["cc", "PPO"]:
         print("Unrecognized algorithm. Exiting...")
@@ -63,7 +61,6 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
 
         # Reload the algorithm as is from training.
         if checkpoint is not None:
-
             # use policy here instead of algorithm because it's more efficient
             use_policy = True
             from ray.rllib.policy.policy import Policy
@@ -73,7 +70,7 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
 
             # need preprocesor here if using policy
             # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
-            prep = get_preprocessor(env.observation_space[env.first_uav_id])(env.observation_space[env.first_uav_id])
+            prep = get_preprocessor(env_obs_space)(env_obs_space)
         else:
             use_policy = False
             algo = (
@@ -93,8 +90,8 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
                     policies={
                         "shared_policy": (
                             None,
-                            env.observation_space[env.first_uav_id],
-                            env.action_space[env.first_uav_id],
+                            env_obs_space,
+                            env_action_space,
                             {},
                         )
                     },
@@ -111,45 +108,12 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
     # if exp_config["exp_config"]["safe_action_type"] == "nn_cbf":
     #     sl = SafetyLayer(env, exp_config["safety_layer_cfg"])
 
-    time_step_list = []
-    uav_collision_list = [[] for idx in range(env.num_uavs)]
-    obstacle_collision_list = [[] for idx in range(env.num_uavs)]
-    uav_done_list = [[] for idx in range(env.num_uavs)]
-    uav_done_dt_list = [[] for idx in range(env.num_uavs)]
-    uav_dt_go_list = [[] for idx in range(env.num_uavs)]
-    rel_pad_dist = [[] for idx in range(env.num_uavs)]
-    rel_pad_vel = [[] for idx in range(env.num_uavs)]
-    uav_state = [[] for idx in range(env.num_uavs)]
-    uav_reward = [[] for idx in range(env.num_uavs)]
-    rel_pad_state = [[] for idx in range(env.num_uavs)]
-    obstacle_state = [[] for idx in range(env.max_num_obstacles)]
-    target_state = []
+    env = algo.workers.local_worker().env
 
-    results = {
-        "num_episodes": 0.0,
-        "uav_collision": 0.0,
-        "obs_collision": 0.0,
-        "uav_done": [[] for idx in range(env.num_uavs)],
-        "uav_done_dt": [[] for idx in range(env.num_uavs)],
-        "episode_time": [],
-        "episode_data": {
-            "time_step_list": [],
-            "uav_collision_list": [],
-            "obstacle_collision_list": [],
-            "uav_done_list": [],
-            "uav_done_dt_list": [],
-            "uav_dt_go_list": [],
-            "rel_pad_dist": [],
-            "rel_pad_vel": [],
-            "uav_state": [],
-            "uav_reward": [],
-            "rel_pad_state": [],
-            "obstacle_state": [],
-            "target_state": [],
-        },
-    }
+    env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
+    for uav in env.uavs.values():
+        env_logger.add_uav(uav.id)
 
-    num_episodes = 0
     (obs, info), done = env.reset(), {i.id: False for i in env.uavs.values()}
 
     done["__all__"] = False
@@ -158,10 +122,10 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
     num_episodes = 0
     start_time = time()
 
+    time_step = 0
     while num_episodes < max_num_episodes:
         actions = {}
         for uav in env.uavs.values():
-
             idx = uav.id
             # classic control
             if algo_to_run == "cc":
@@ -187,118 +151,60 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
                     print("unknow safe action type")
 
         obs, rew, done, truncated, info = env.step(actions)
-        for k, v in info.items():
-            results["uav_collision"] += v["uav_collision"]
-            results["obs_collision"] += v["obstacle_collision"]
+        if time_step % (env.env_freq / env_logger.log_freq) == 0:
+            env_logger.log(
+                eps_num=num_episodes, info=info, obs=obs, reward=rew, action=actions
+            )
 
-        # only get for 1st episode
-        if num_episodes == 0:
-            for k, v in info.items():
-                uav_collision_list[k].append(v["uav_collision"])
-                obstacle_collision_list[k].append(v["obstacle_collision"])
-                uav_done_list[k].append(v["uav_landed"])
-                uav_done_dt_list[k].append(v["uav_done_dt"])
-                uav_dt_go_list[k].append(v["uav_dt_go"])
-                rel_pad_dist[k].append(v["uav_rel_dist"])
-                rel_pad_vel[k].append(v["uav_rel_vel"])
-                uav_reward[k].append(rew[k])
-
-            for uav_idx in range(env.num_uavs):
-                uav_state[uav_idx].append(env.uavs[uav_idx].state.tolist())
-                rel_pad_state[uav_idx].append(env.uavs[uav_idx].pad.state.tolist())
-
-            target_state.append(env.target.state.tolist())
-            time_step_list.append(env.time_elapsed)
-
-            for obs_idx in range(env.max_num_obstacles):
-                obstacle_state[obs_idx].append(env.obstacles[obs_idx].state.tolist())
-
-        if render:
+        if renders:
             env.render()
 
         if done["__all__"]:
             num_episodes += 1
-            for k, v in info.items():
-                results["uav_done"][k].append(v["uav_landed"])
-                results["uav_done_dt"][k].append(v["uav_done_dt"])
-            results["num_episodes"] = num_episodes
-            results["episode_time"].append(env.time_elapsed)
 
-            if num_episodes <= 1:
-                results["episode_data"]["time_step_list"].append(time_step_list)
-                results["episode_data"]["uav_collision_list"].append(uav_collision_list)
-                results["episode_data"]["obstacle_collision_list"].append(
-                    obstacle_collision_list
-                )
-                results["episode_data"]["uav_done_list"].append(uav_done_list)
-                results["episode_data"]["uav_done_dt_list"].append(uav_done_dt_list)
-                results["episode_data"]["uav_dt_go_list"].append(uav_dt_go_list)
-                results["episode_data"]["rel_pad_dist"].append(rel_pad_dist)
-                results["episode_data"]["rel_pad_vel"].append(rel_pad_vel)
-                results["episode_data"]["uav_state"].append(uav_state)
-                results["episode_data"]["target_state"].append(target_state)
-                results["episode_data"]["uav_reward"].append(uav_reward)
-                results["episode_data"]["rel_pad_state"].append(rel_pad_state)
-                results["episode_data"]["obstacle_state"].append(obstacle_state)
-
-            if render:
-                im = env.render(mode="rgb_array", done=True)
-                # fig, ax = plt.subplots()
-                # im = ax.imshow(im)
-                # plt.show()
             if plot_results:
-                plot_uav_states(results, env_config, num_episodes - 1)
+                env_logger.plot(plt_action=True)
 
             if num_episodes == max_num_episodes:
                 end_time = time() - start_time
                 break
-            env_out, done = env.reset(), {
+
+            (obs, info), done = env.reset(), {
                 agent.id: False for agent in env.uavs.values()
             }
-            obs, info = env_out
             done["__all__"] = False
 
-            # reinitialize data arrays
-            time_step_list = [[] for idx in range(env.num_uavs)]
-            uav_collision_list = [[] for idx in range(env.num_uavs)]
-            obstacle_collision_list = [[] for idx in range(env.num_uavs)]
-            uav_done_list = [[] for idx in range(env.num_uavs)]
-            uav_done_dt_list = [[] for idx in range(env.num_uavs)]
-            uav_dt_go_list = [[] for idx in range(env.num_uavs)]
-            rel_pad_dist = [[] for idx in range(env.num_uavs)]
-            rel_pad_vel = [[] for idx in range(env.num_uavs)]
-            uav_state = [[] for idx in range(env.num_uavs)]
-            uav_reward = [[] for idx in range(env.num_uavs)]
-            rel_pad_state = [[] for idx in range(env.num_uavs)]
-            obstacle_state = [[] for idx in range(env.num_obstacles)]
-            target_state = []
+        time_step += 1
 
     env.close()
 
-    if write_experiment:
-        if fname is None:
-            file_prefix = {
-                "tgt_v": env_config["target_v"],
-                "sa": env_config["use_safe_action"],
-                "obs": env_config["num_obstacles"],
-                "seed": env_config["seed"],
-            }
-            file_prefix = "_".join(
-                [f"{k}_{str(int(v))}" for k, v in file_prefix.items()]
-            )
+    # TODO: set log time
+    # env_logger.log_total_time()
+    # TODO: fix logging the experiment
+    # if write_experiment:
+    #     if fname is None:
+    #         file_prefix = {
+    #             "tgt_v": env_config["target_v"],
+    #             "sa": env_config["use_safe_action"],
+    #             "obs": env_config["num_obstacles"],
+    #             "seed": env_config["seed"],
+    #         }
+    #         file_prefix = "_".join(
+    #             [f"{k}_{str(int(v))}" for k, v in file_prefix.items()]
+    #         )
 
-            fname = f"exp_{experiment_num}_{file_prefix}_result.json"
-        # writing too much data, for now just save the first experiment
-        for k, v in results["episode_data"].items():
-            results["episode_data"][k] = [
-                v[0],
-            ]
+    #         fname = f"exp_{experiment_num}_{file_prefix}_result.json"
+    #     # writing too much data, for now just save the first experiment
+    #     for k, v in results["episode_data"].items():
+    #         results["episode_data"][k] = [
+    #             v[0],
+    #         ]
 
-        results["env_config"] = env.env_config
-        results["exp_config"] = exp_config["exp_config"]
-        results["time_total_s"] = end_time
-        with open(fname, "w") as f:
-            json.dump(results, f)
+    #     results["env_config"] = env.env_config
+    #     results["exp_config"] = exp_config["exp_config"]
+    #     results["time_total_s"] = end_time
+    #     with open(fname, "w") as f:
+    #         json.dump(results, f)
 
     logger.debug("done")
 
@@ -314,7 +220,7 @@ def parse_arguments():
     parser.add_argument("--max_num_episodes", type=int, default=1)
     parser.add_argument("--experiment_num", type=int, default=0)
     parser.add_argument("--env_name", type=str, default="multi-uav-sim-v0")
-    parser.add_argument("--render", action="store_true", default=False)
+    parser.add_argument("--renders", action="store_true", default=False)
     parser.add_argument("--write_exp", action="store_true")
     parser.add_argument("--plot_results", action="store_true", default=False)
 
@@ -349,7 +255,7 @@ def main():
 
     max_num_episodes = args.max_num_episodes
     experiment_num = args.experiment_num
-    args.config["render"] = args.render
+    args.config["env_config"]["renders"] = args.renders
     args.config["plot_results"] = args.plot_results
 
     if args.write_exp:

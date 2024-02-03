@@ -13,72 +13,74 @@
             "justMyCode": true,
             "cwd": "${workspaceFolder}",
             "args": [
+                "test",
                 "--renders",
                 "--plot_results"
-            ]
+            ],
+            // "env": {"DISPLAY": "192.168.1.17:0.0"
         },
-        {
-            "name": "test_rl_mus",
-            "type": "python",
-            "request": "launch",
-            "program": "${cwd}/tests/test_rl_mus.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "DISPLAY": "192.168.1.17:0.0"
-            },
-            "args": [
-                "-v",
-                "--failfast"
-            ]
+    {
+        "name": "test_rl_mus",
+        "type": "python",
+        "request": "launch",
+        "program": "${cwd}/tests/test_rl_mus.py",
+        "console": "integratedTerminal",
+        "justMyCode": true,
+        "cwd": "${workspaceFolder}",
+        "env": {
+            "DISPLAY": "192.168.1.17:0.0"
         },
-        {
-            "name": "test_uav",
-            "type": "python",
-            "request": "launch",
-            "module": "unittest",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}",
-            "args": [
-                "-v",
-                "${cwd}/tests/test_uav.py",
-                "--failfast"
-            ]
-        },
-        {
-            "name": "test_target",
-            "type": "python",
-            "request": "launch",
-            "module": "unittest",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}",
-            "args": [
-                "-v",
-                "${cwd}/tests/test_target.py",
-                "--failfast"
-            ]
-        },
-        {
-            "name": "test_plotter",
-            "type": "python",
-            "request": "launch",
-            "module": "unittest",
-            "justMyCode": true,
-            "cwd": "${workspaceFolder}",
-            "args": [
-                "-v",
-                "${cwd}/tests/test_plotter.py",
-                "--failfast"
-            ]
-        },
-        {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": true
-        }
-    ]
+        "args": [
+            "-v",
+            "--failfast"
+        ]
+    },
+    {
+        "name": "test_uav",
+        "type": "python",
+        "request": "launch",
+        "module": "unittest",
+        "justMyCode": true,
+        "cwd": "${workspaceFolder}",
+        "args": [
+            "-v",
+            "${cwd}/tests/test_uav.py",
+            "--failfast"
+        ]
+    },
+    {
+        "name": "test_target",
+        "type": "python",
+        "request": "launch",
+        "module": "unittest",
+        "justMyCode": true,
+        "cwd": "${workspaceFolder}",
+        "args": [
+            "-v",
+            "${cwd}/tests/test_target.py",
+            "--failfast"
+        ]
+    },
+    {
+        "name": "test_plotter",
+        "type": "python",
+        "request": "launch",
+        "module": "unittest",
+        "justMyCode": true,
+        "cwd": "${workspaceFolder}",
+        "args": [
+            "-v",
+            "${cwd}/tests/test_plotter.py",
+            "--failfast"
+        ]
+    },
+    {
+        "name": "Python: Current File",
+        "type": "python",
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal",
+        "justMyCode": true
+    }
+]
 }

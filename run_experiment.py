@@ -10,15 +10,60 @@ from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
 from rl_mus.utils.env_utils import get_git_hash
 from rl_mus.utils.logger import EnvLogger
+from ray.tune.registry import get_trainable_cls
+import ray
 
 import os
 import logging
 import json
-from rl_mus.utils.logger import UavLogger
-
 
 PATH = Path(__file__).parent.absolute().resolve()
 logger = logging.getLogger(__name__)
+max_num_cpus = os.cpu_count() - 1
+
+
+def get_algo_config(config):
+
+    env_config = config["env_config"]
+
+    # Need to create a temporary environment to get obs and action space
+    renders = env_config["renders"]
+    env_config["renders"] = False
+    temp_env = RlMus(env_config)
+    env_obs_space = temp_env.observation_space[temp_env.first_uav_id]
+    env_action_space = temp_env.action_space[temp_env.first_uav_id]
+    temp_env.close()
+    env_config["renders"] = renders
+
+    algo_config = (
+        get_trainable_cls(config["exp_config"]["run"])
+        .get_default_config()
+        .environment(env=config["env_name"], env_config=config["env_config"])
+        .framework(config["exp_config"]["framework"])
+        .rollouts(num_rollout_workers=0)
+        .debugging(log_level="ERROR", seed=config["env_config"]["seed"])
+        .resources(
+            num_gpus=0,
+            placement_strategy=[{"cpu": 1}, {"cpu": 1}],
+            num_gpus_per_learner_worker=0,
+        )
+        .multi_agent(
+            policies={
+                "shared_policy": (
+                    None,
+                    env_obs_space,
+                    env_action_space,
+                    {},
+                )
+            },
+            # Always use "shared" policy.
+            policy_mapping_fn=(
+                lambda agent_id, episode, worker, **kwargs: "shared_policy"
+            ),
+        )
+    )
+
+    return algo_config
 
 
 def setup_stream(logging_level=logging.DEBUG):
@@ -35,21 +80,139 @@ def setup_stream(logging_level=logging.DEBUG):
     logger.setLevel(logging_level)
 
 
-def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
+def train(args):
+
+    ray.init(local_mode=args.local_mode,  num_gpus=1)
+
+    temp_env = UavSim(args.config)
+    num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
+
+    callback_list = [TrainCallback]
+    # multi_callbacks = make_multi_callbacks(callback_list)
+    # info on common configs: https://docs.ray.io/en/latest/rllib/rllib-training.html#specifying-rollout-workers
+    train_config = get_algo_config(args.config)
+    train_config = train_config.rollouts(
+            num_rollout_workers=(
+                4 if args.smoke_test else args.num_rollout_workers
+            ),  # set 0 to main worker run sim
+            num_envs_per_worker=args.num_envs_per_worker,
+            create_env_on_local_worker=True,
+            batch_mode="complete_episodes",
+        )
+        # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
+        .debugging(log_level="ERROR", seed=123)  # DEBUG, INFO
+        .resources(
+            num_gpus=0 if args.smoke_test else num_gpus,
+            # num_learner_workers=1,
+            num_gpus_per_learner_worker=0 if args.smoke_test else args.gpu,
+        )
+        # See for changing model options https://docs.ray.io/en/latest/rllib/rllib-models.html
+        # .model()
+        # See for specific ppo config: https://docs.ray.io/en/latest/rllib/rllib-algorithms.html#ppo
+        # See for more on PPO hyperparameters: https://medium.com/aureliantactics/ppo-hyperparameters-and-ranges-6fc2d29bccbe
+        .training(
+            lr=5e-5,
+            use_gae=True,
+            use_critic=True,
+            lambda_=0.95,
+            train_batch_size=65536,
+            gamma=0.99,
+            num_sgd_iter=32,
+            sgd_minibatch_size=4096,
+            vf_clip_param=10.0,
+            vf_loss_coeff=0.5,
+            clip_param=0.2,
+            grad_clip=1.0,
+            # entropy_coeff=0.0,
+            # # seeing if this solves the error:
+            # # https://neptune.ai/blog/understanding-gradient-clipping-and-how-it-can-fix-exploding-gradients-problem
+            # # Expected parameter loc (Tensor of shape (4096, 3)) of distribution Normal(loc: torch.Size([4096, 3]), scale: torch.Size([4096, 3])) to satisfy the constraint Real(),
+            # kl_coeff=1.0,
+            # kl_target=0.0068,
+        )
+        .multi_agent(
+            policies={
+                "shared_policy": (
+                    None,
+                    temp_env.observation_space[0],
+                    temp_env.action_space[0],
+                    {},
+                )
+            },
+            # Always use "shared" policy.
+            policy_mapping_fn=(
+                lambda agent_id, episode, worker, **kwargs: "shared_policy"
+            ),
+            # policies_to_train=[""]
+        )
+        # .reporting(keep_per_episode_custom_metrics=True)
+        # .evaluation(
+        #     evaluation_interval=10, evaluation_duration=10  # default number of episodes
+        # )
+    )
+
+    multi_callbacks = make_multi_callbacks(callback_list)
+    train_config.callbacks(multi_callbacks)
+
+    stop = {
+        "training_iteration": 1 if args.smoke_test else args.stop_iters,
+        "timesteps_total": args.stop_timesteps,
+    }
+
+    # # # trainable_with_resources = tune.with_resources(args.run, {"cpu": 18, "gpu": 1.0})
+    # # # If you have 4 CPUs and 1 GPU on your machine, this will run 1 trial at a time.
+    # # trainable_with_cpu_gpu = tune.with_resources(algo, {"cpu": 2, "gpu": 1})
+    tuner = tune.Tuner(
+        args.run,
+        # trainable_with_cpu_gpu,
+        param_space=train_config.to_dict(),
+        # tune_config=tune.TuneConfig(num_samples=10),
+        run_config=air.RunConfig(
+            stop=stop,
+            local_dir=args.log_dir,
+            name=args.name,
+            checkpoint_config=air.CheckpointConfig(
+                # num_to_keep=150,
+                # checkpoint_score_attribute="",
+                checkpoint_at_end=True,
+                checkpoint_frequency=5,
+            ),
+        ),
+    )
+
+    results = tuner.fit()
+
+    ray.shutdown()
+
+
+def test(args):
+    if args.tune_run:
+        pass
+    else:
+        experiment(args)
+
+
+def experiment(args):
+    args.config["env_config"]["renders"] = args.renders
+    args.config["plot_results"] = args.plot_results
+    if args.write_exp:
+        args.config["write_experiment"] = True
+
+        output_folder = Path(args.log_dir)
+        if not output_folder.exists():
+            output_folder.mkdir(parents=True, exist_ok=True)
+
+        args.config["fname"] = output_folder / "result.json"
+    experiment_num = args.experiment_num
+    exp_config = args.config
+    max_num_episodes = args.max_num_episodes
+
     fname = exp_config.setdefault("fname", None)
     write_experiment = exp_config.setdefault("write_experiment", False)
     env_config = exp_config["env_config"]
     plot_results = exp_config["plot_results"]
     log_config = exp_config["logger_config"]
-
-    # Need to create a temporary environment to get obs and action space
     renders = env_config["renders"]
-    env_config['renders'] = False
-    temp_env = RlMus(env_config)
-    env_obs_space = temp_env.observation_space[temp_env.first_uav_id]
-    env_action_space = temp_env.action_space[temp_env.first_uav_id]
-    temp_env.close()
-    env_config['renders'] = renders
 
     # get the algorithm or policy to run
     algo_to_run = exp_config["exp_config"].setdefault("run", "PPO")
@@ -62,8 +225,8 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
 
         # Reload the algorithm as is from training.
         if checkpoint is not None:
-            # use policy here instead of algorithm because it's more efficient
             use_policy = True
+            # use policy here instead of algorithm because it's more efficient
             from ray.rllib.policy.policy import Policy
             from ray.rllib.models.preprocessors import get_preprocessor
 
@@ -74,40 +237,7 @@ def experiment(exp_config={}, max_num_episodes=1, experiment_num=0):
             prep = get_preprocessor(env_obs_space)(env_obs_space)
         else:
             use_policy = False
-            algo = (
-                PPOConfig()
-                .environment(
-                    env=exp_config["env_name"], env_config=exp_config["env_config"]
-                )
-                .framework("torch")
-                .rollouts(num_rollout_workers=0)
-                .debugging(log_level="ERROR", seed=exp_config["env_config"]["seed"])
-                .resources(
-                    num_gpus=0,
-                    placement_strategy=[{"cpu": 1}, {"cpu": 1}],
-                    num_gpus_per_learner_worker=0,
-                )
-                .multi_agent(
-                    policies={
-                        "shared_policy": (
-                            None,
-                            env_obs_space,
-                            env_action_space,
-                            {},
-                        )
-                    },
-                    # Always use "shared" policy.
-                    policy_mapping_fn=(
-                        lambda agent_id, episode, worker, **kwargs: "shared_policy"
-                    ),
-                )
-                .build()
-            )
-            # restore algorithm if need be:
-            # algo.restore(checkpoint)
-
-    # if exp_config["exp_config"]["safe_action_type"] == "nn_cbf":
-    #     sl = SafetyLayer(env, exp_config["safety_layer_cfg"])
+            algo = get_algo_config(exp_config).build()
 
     env = algo.workers.local_worker().env
 
@@ -216,14 +346,18 @@ def parse_arguments():
     parser.add_argument(
         "--log_dir",
     )
-    parser.add_argument("-d", "--debug")
-    parser.add_argument("-v", help="version number of experiment")
-    parser.add_argument("--max_num_episodes", type=int, default=1)
-    parser.add_argument("--experiment_num", type=int, default=0)
-    parser.add_argument("--env_name", type=str, default="multi-uav-sim-v0")
-    parser.add_argument("--renders", action="store_true", default=False)
-    parser.add_argument("--write_exp", action="store_true")
-    parser.add_argument("--plot_results", action="store_true", default=False)
+    subparsers = parser.add_subparsers(dest="command")
+    test_sub = subparsers.add_parser("test")
+    test_sub.add_argument("--env_name", type=str, default="multi-uav-sim-v0")
+    test_sub.add_argument("-d", "--debug")
+    test_sub.add_argument("-v", help="version number of experiment")
+    test_sub.add_argument("--max_num_episodes", type=int, default=1)
+    test_sub.add_argument("--experiment_num", type=int, default=0)
+    test_sub.add_argument("--renders", action="store_true", default=False)
+    test_sub.add_argument("--write_exp", action="store_true")
+    test_sub.add_argument("--plot_results", action="store_true", default=False)
+    test_sub.add_argument("--tune_run", action="store_true", default=False)
+    test_sub.set_defaults(func=test)
 
     args = parser.parse_args()
 
@@ -252,23 +386,15 @@ def main():
         branch_hash = get_git_hash()
 
         dir_timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        args.log_dir = f"./results/test_results/exp_{dir_timestamp}_{branch_hash}"
+        args.log_dir = (
+            f"./results/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}"
+        )
 
-    max_num_episodes = args.max_num_episodes
-    experiment_num = args.experiment_num
-    args.config["env_config"]["renders"] = args.renders
-    args.config["plot_results"] = args.plot_results
+    args.log_dir = Path(args.log_dir).resolve()
+    if not args.log_dir.exists():
+        args.log_dir.mkdir(parents=True, exist_ok=True)
 
-    if args.write_exp:
-        args.config["write_experiment"] = True
-
-        output_folder = Path(args.log_dir)
-        if not output_folder.exists():
-            output_folder.mkdir(parents=True, exist_ok=True)
-
-        args.config["fname"] = output_folder / "result.json"
-
-    experiment(args.config, max_num_episodes, experiment_num)
+    args.func(args)
 
 
 if __name__ == "__main__":

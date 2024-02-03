@@ -11,6 +11,9 @@ from ray.rllib.algorithms.ppo import PPOConfig
 from rl_mus.utils.env_utils import get_git_hash
 from rl_mus.utils.logger import EnvLogger
 from ray.tune.registry import get_trainable_cls
+from ray import air, tune
+from rl_mus.utils.callbacks import TrainCallback
+from ray.rllib.algorithms.callbacks import make_multi_callbacks
 import ray
 
 import os
@@ -20,6 +23,20 @@ import json
 PATH = Path(__file__).parent.absolute().resolve()
 logger = logging.getLogger(__name__)
 max_num_cpus = os.cpu_count() - 1
+
+
+def setup_stream(logging_level=logging.DEBUG):
+    # Turns on logging to console
+    ch = logging.StreamHandler()
+    ch.setLevel(logging_level)
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - "
+        "<%(module)s:%(funcName)s:%(lineno)s> - %(message)s",
+        "%Y-%m-%d %H:%M:%S",
+    )
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    logger.setLevel(logging_level)
 
 
 def get_algo_config(config):
@@ -42,11 +59,6 @@ def get_algo_config(config):
         .framework(config["exp_config"]["framework"])
         .rollouts(num_rollout_workers=0)
         .debugging(log_level="ERROR", seed=config["env_config"]["seed"])
-        .resources(
-            num_gpus=0,
-            placement_strategy=[{"cpu": 1}, {"cpu": 1}],
-            num_gpus_per_learner_worker=0,
-        )
         .multi_agent(
             policies={
                 "shared_policy": (
@@ -66,32 +78,17 @@ def get_algo_config(config):
     return algo_config
 
 
-def setup_stream(logging_level=logging.DEBUG):
-    # Turns on logging to console
-    ch = logging.StreamHandler()
-    ch.setLevel(logging_level)
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - "
-        "<%(module)s:%(funcName)s:%(lineno)s> - %(message)s",
-        "%Y-%m-%d %H:%M:%S",
-    )
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    logger.setLevel(logging_level)
-
-
 def train(args):
 
-    ray.init(local_mode=args.local_mode,  num_gpus=1)
+    ray.init(local_mode=args.local_mode, num_gpus=1)
 
-    temp_env = UavSim(args.config)
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
 
     callback_list = [TrainCallback]
     # multi_callbacks = make_multi_callbacks(callback_list)
     # info on common configs: https://docs.ray.io/en/latest/rllib/rllib-training.html#specifying-rollout-workers
-    train_config = get_algo_config(args.config)
-    train_config = train_config.rollouts(
+    train_config = (
+        get_algo_config(args.config).rollouts(
             num_rollout_workers=(
                 4 if args.smoke_test else args.num_rollout_workers
             ),  # set 0 to main worker run sim
@@ -100,7 +97,6 @@ def train(args):
             batch_mode="complete_episodes",
         )
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
-        .debugging(log_level="ERROR", seed=123)  # DEBUG, INFO
         .resources(
             num_gpus=0 if args.smoke_test else num_gpus,
             # num_learner_workers=1,
@@ -129,21 +125,6 @@ def train(args):
             # # Expected parameter loc (Tensor of shape (4096, 3)) of distribution Normal(loc: torch.Size([4096, 3]), scale: torch.Size([4096, 3])) to satisfy the constraint Real(),
             # kl_coeff=1.0,
             # kl_target=0.0068,
-        )
-        .multi_agent(
-            policies={
-                "shared_policy": (
-                    None,
-                    temp_env.observation_space[0],
-                    temp_env.action_space[0],
-                    {},
-                )
-            },
-            # Always use "shared" policy.
-            policy_mapping_fn=(
-                lambda agent_id, episode, worker, **kwargs: "shared_policy"
-            ),
-            # policies_to_train=[""]
         )
         # .reporting(keep_per_episode_custom_metrics=True)
         # .evaluation(
@@ -237,7 +218,15 @@ def experiment(args):
             prep = get_preprocessor(env_obs_space)(env_obs_space)
         else:
             use_policy = False
-            algo = get_algo_config(exp_config).build()
+            algo = (
+                get_algo_config(exp_config)
+                .resources(
+                    num_gpus=0,
+                    placement_strategy=[{"cpu": 1}, {"cpu": 1}],
+                    num_gpus_per_learner_worker=0,
+                )
+                .build()
+            )
 
     env = algo.workers.local_worker().env
 
@@ -346,9 +335,20 @@ def parse_arguments():
     parser.add_argument(
         "--log_dir",
     )
+    parser.add_argument(
+        "--run", type=str, default="PPO", help="The RLlib-registered algorithm to use."
+    )
+    parser.add_argument("--name", help="Name of experiment.", default="debug")
+    parser.add_argument(
+        "--framework",
+        choices=["tf", "tf2", "torch"],
+        default="torch",
+        help="The DL framework specifier.",
+    )
+    parser.add_argument("--env_name", type=str, default="multi-uav-sim-v0")
+
     subparsers = parser.add_subparsers(dest="command")
     test_sub = subparsers.add_parser("test")
-    test_sub.add_argument("--env_name", type=str, default="multi-uav-sim-v0")
     test_sub.add_argument("-d", "--debug")
     test_sub.add_argument("-v", help="version number of experiment")
     test_sub.add_argument("--max_num_episodes", type=int, default=1)
@@ -358,6 +358,32 @@ def parse_arguments():
     test_sub.add_argument("--plot_results", action="store_true", default=False)
     test_sub.add_argument("--tune_run", action="store_true", default=False)
     test_sub.set_defaults(func=test)
+
+    train_sub = subparsers.add_parser("train")
+    train_sub.add_argument("--smoke_test", action="store_true", help="run quicktest")
+
+    train_sub.add_argument(
+        "--stop-iters", type=int, default=1000, help="Number of iterations to train."
+    )
+    train_sub.add_argument(
+        "--stop-timesteps",
+        type=int,
+        default=int(30e6),
+        help="Number of timesteps to train.",
+    )
+
+    train_sub.add_argument(
+        "--local-mode",
+        action="store_true",
+        help="Init Ray in local mode for easier debugging.",
+    )
+
+    train_sub.add_argument("--checkpoint", type=str)
+    train_sub.add_argument("--cpu", type=int, default=8)
+    train_sub.add_argument("--gpu", type=int, default=0.5)
+    train_sub.add_argument("--num_envs_per_worker", type=int, default=12)
+    train_sub.add_argument("--num_rollout_workers", type=int, default=8)
+    train_sub.set_defaults(func=train)
 
     args = parser.parse_args()
 
@@ -386,9 +412,7 @@ def main():
         branch_hash = get_git_hash()
 
         dir_timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        args.log_dir = (
-            f"./results/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}"
-        )
+        args.log_dir = f"./results/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}/{args.name}"
 
     args.log_dir = Path(args.log_dir).resolve()
     if not args.log_dir.exists():

@@ -4,8 +4,21 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+                {
+            "name": "run_experiment--train",
+            "type": "python",
+            "request": "launch",
+            "program": "${cwd}/run_experiment.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "train",
+                // "--smoke_test",
+            ],
+        },
         {
-            "name": "run_experiment",
+            "name": "run_experiment--test",
             "type": "python",
             "request": "launch",
             "program": "${cwd}/run_experiment.py",

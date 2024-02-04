@@ -436,10 +436,12 @@ class RlMus(MultiAgentEnv):
 
         obs, reward, info = {}, {}, {}
 
-        reward =  {uav_id: self._get_reward(self.uavs[uav_id]) for uav_id in self.uavs.keys()}
+        # reward = {
+        #     uav_id: self._get_reward(self.uavs[uav_id]) for uav_id in self.uavs.keys()
+        # }
         for uav_id in self.alive_agents:
             obs[uav_id] = self._get_obs(self.uavs[uav_id])
-            # reward[uav_id] = self._get_reward(self.uavs[uav_id])
+            reward[uav_id] = self._get_reward(self.uavs[uav_id])
             info[uav_id] = self._get_info(self.uavs[uav_id])
         # obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
         # reward = {uav.id: self._get_reward(uav) for uav in self.uavs.values()}
@@ -449,7 +451,7 @@ class RlMus(MultiAgentEnv):
         # info = {id: self._get_info(self.uavs[id]) for id in self.alive_agents}
         # calculate done for each agent
         # done = {self.uavs[id].id: self.uavs[id].done for id in self.alive_agents}
-        fake_done = {self.uavs[id].id: False for id in self.alive_agents}
+        # fake_done = {self.uavs[id].id: False for id in self.alive_agents}
         real_done = {self.uavs[id].id: self.uavs[id].done for id in self.alive_agents}
         real_done["__all__"] = (
             all(v for v in real_done.values()) or self.time_elapsed >= self.max_time
@@ -531,14 +533,14 @@ class RlMus(MultiAgentEnv):
         uav.rel_target_vel = uav.rel_vel(target)
         is_reached = uav.rel_target_dist <= self._d_thresh
 
+        if uav.done:
+            # UAV most have finished last time_step, report zero collisions
+            return reward
+
         # give penalty for reaching the time limit
         if self.time_elapsed >= self.max_time:
             reward -= self._stp_penalty
             uav.done = True
-            return reward
-
-        if uav.done:
-            # UAV most have finished last time_step, report zero collisions
             return reward
 
         uav.done_dt = t_remaining
@@ -565,11 +567,11 @@ class RlMus(MultiAgentEnv):
         #     [self.env_max_l, self.env_max_w, self.env_max_h]
         # ):
         #     reward += -10
-        # else:
-        #     reward -= self._beta * (
-        #         uav.rel_target_dist
-        #         / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
-        #     )
+        else:
+            reward -= self._beta * (
+                uav.rel_target_dist
+                / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
+            )
 
         # give small penalty for having large relative velocity
         # reward += -self._beta * uav.rel_target_vel

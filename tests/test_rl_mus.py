@@ -19,11 +19,37 @@ class TestRlMus(unittest.TestCase):
     def test_check_env(self):
         check_env(RlMus({}))
 
-    # def test_render(self):
-    #     self.env = RlMus(env_config={"renders": True})
-    #     obs, info = self.env.reset()
-    #     for _ in range(100):
-    #         self.env.render()
+    def test_render(self):
+        self.env = RlMus(env_config={"renders": True})
+        obs, info = self.env.reset()
+        for _ in range(100):
+            self.env.render()
+
+    def test_termination(self):
+        env = RlMus(env_config={"renders": False})
+        obs, info = env.reset()
+        done = None
+        last_done_id = None
+        for i in range(1000):
+            actions = env.action_space.sample()
+
+            if i > 1:
+                for uav_id in done.keys():
+                    if done[uav_id]:
+                        actions.pop(uav_id)
+                        last_done_id = uav_id
+            obs, reward, done, _, info = env.step(actions)
+                
+            if i > 1 and last_done_id is not None:
+                self.assertFalse(last_done_id in done.keys())
+                # for uav_id in done.keys():
+                    # self.assertTrue(uav_id in actions.keys())
+                    # if done[uav_id]:
+                        # actions.pop(uav_id)
+ 
+            # self.assertFalse(1 in actions.keys())
+            # self.assertFalse(1 in done.keys())
+
 
     # def test_observation_space(self):
     #     env = RlMus({"num_uavs": 1, "num_obstacles": 0})
@@ -998,11 +1024,12 @@ class TestRlMus(unittest.TestCase):
 # Everything below is to make sure that the tests are run in a specific order.
 def suite():
     suite = unittest.TestSuite()
-    # suite.addTest(TestRlMus("test_check_env"))
-    suite.addTest(TestRlMus("test_log_env"))
+    suite.addTest(TestRlMus("test_check_env"))
+    # suite.addTest(TestRlMus("test_log_env"))
+    suite.addTest(TestRlMus("test_termination"))
     # suite.addTest(TestRlMus("test_uav_go_to_goal"))
     # suite.addTest(TestRlMus("test_uav_vel_control"))
-    suite.addTest(TestRlMus("test_uav_apf_vel_control"))
+    # suite.addTest(TestRlMus("test_uav_apf_vel_control"))
 
     return suite
 

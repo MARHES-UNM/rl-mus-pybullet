@@ -87,6 +87,7 @@ def get_algo_config(config):
 
 def train(args):
 
+    # args.local_mode = True
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
@@ -101,6 +102,7 @@ def train(args):
             ),  # set 0 to main worker run sim
             num_envs_per_worker=args.num_envs_per_worker,
             create_env_on_local_worker=True,
+            rollout_fragment_length = "auto",
             batch_mode="complete_episodes",
         )
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.

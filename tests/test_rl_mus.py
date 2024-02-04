@@ -157,7 +157,7 @@ class TestRlMus(unittest.TestCase):
 
     def test_uav_apf_vel_control(self):
 
-        env = RlMus(env_config={"num_uavs": 1, "renders": True})
+        env = RlMus(env_config={"num_uavs": 2, "renders": True})
         log_config = {"obs_items": ["state", "target"], "info_items": ["uav_collision"], "log_freq": 10, "env_freq": 240}
 
         env_logger = EnvLogger(

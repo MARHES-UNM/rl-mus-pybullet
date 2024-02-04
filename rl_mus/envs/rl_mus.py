@@ -412,8 +412,8 @@ class RlMus(MultiAgentEnv):
         self.alive_agents = set()
         for uav_id, action in actions.items():
             # Done uavs don't move
-            # if self.uavs[uav_id].done:
-            #     continue
+            if self.uavs[uav_id].done:
+                continue
 
             self.alive_agents.add(uav_id)
 

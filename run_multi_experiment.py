@@ -10,7 +10,7 @@ from functools import partial
 import logging
 import json
 import itertools
-from uav_sim.utils.utils import get_git_hash
+from rl_mus.utils.env_utils import get_git_hash
 
 
 formatter = "%(asctime)s: %(name)s - %(levelname)s - <%(module)s:%(funcName)s:%(lineno)d> - %(message)s"

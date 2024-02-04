@@ -533,15 +533,17 @@ class RlMus(MultiAgentEnv):
         if is_reached:
             uav.done = True
             uav.target_reached = True
+            reward += self._tgt_reward
 
-            # get reward for reaching destination in time
-            if abs(uav.done_dt) < self.t_go_max:
-                reward += self._tgt_reward
 
-            else:
-                reward += (
-                    -(1 - (self.time_elapsed / self.time_final)) * self._stp_penalty
-                )
+            # # get reward for reaching destination in time
+            # if abs(uav.done_dt) < self.t_go_max:
+            #     reward += self._tgt_reward
+
+            # else:
+            #     reward += (
+            #         -(1 - (self.time_elapsed / self.time_final)) * self._stp_penalty
+            #     )
 
             # No need to check for other reward, UAV is done.
             return reward
@@ -557,7 +559,7 @@ class RlMus(MultiAgentEnv):
             )
 
         # give small penalty for having large relative velocity
-        reward += -self._beta * uav.rel_target_vel
+        # reward += -self._beta * uav.rel_target_vel
 
         # neg reward if uav collides with other uavs
         for other_uav in self.uavs.values():

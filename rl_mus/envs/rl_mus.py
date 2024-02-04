@@ -437,13 +437,20 @@ class RlMus(MultiAgentEnv):
         obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
         reward = {uav.id: self._get_reward(uav) for uav in self.uavs.values()}
         info = {uav.id: self._get_info(uav) for uav in self.uavs.values()}
-
+        # obs = {id: self._get_obs(self.uavs[id]) for id in self.alive_agents}
+        # reward = {id: self._get_reward(self.uavs[id]) for id in self.alive_agents}
+        # info = {id: self._get_info(self.uavs[id]) for id in self.alive_agents}
         # calculate done for each agent
-        done = {self.uavs[id].id: self.uavs[id].done for id in self.alive_agents}
+        done = {self.uavs[uav_id].id: self.uavs[uav_id].done for uav_id in self.alive_agents}
         done["__all__"] = (
             all(v for v in done.values()) or self.time_elapsed >= self.max_time
         )
-        self._time_elapsed += self.dt
+        # self._time_elapsed += self.dt
+        # print(f"dones: {done}")
+
+        # # truncated = {self.uavs[id].id: self.time_elapsed >= self.max_time for id in self.alive_agents}
+        # # truncated["__all__"] = self.time_elapsed >= self.max_time
+
 
         # newwer api gymnasium > 0.28
         # return obs, reward, terminated, terminated, info

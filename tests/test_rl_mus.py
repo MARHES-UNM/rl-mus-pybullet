@@ -998,8 +998,8 @@ class TestRlMus(unittest.TestCase):
 # Everything below is to make sure that the tests are run in a specific order.
 def suite():
     suite = unittest.TestSuite()
-    # suite.addTest(TestRlMus("test_check_env"))
-    suite.addTest(TestRlMus("test_log_env"))
+    suite.addTest(TestRlMus("test_check_env"))
+    # suite.addTest(TestRlMus("test_log_env"))
     # suite.addTest(TestRlMus("test_uav_go_to_goal"))
     # suite.addTest(TestRlMus("test_uav_vel_control"))
     suite.addTest(TestRlMus("test_uav_apf_vel_control"))

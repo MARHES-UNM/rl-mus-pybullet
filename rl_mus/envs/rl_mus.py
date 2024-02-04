@@ -61,11 +61,6 @@ class RlMus(MultiAgentEnv):
         self.env_max_h = env_config.setdefault("env_max_h", 4)
         self._z_high = env_config.setdefault("z_high", 4)
         self._z_low = env_config.setdefault("z_low", 0.1)
-        self.pad_r = env_config.setdefault("pad_r", 0.01)
-        self.target_v = env_config.setdefault("target_v", 0)
-        self.target_w = env_config.setdefault("target_w", 0)
-        self.target_r = env_config.setdefault("target_r", 1)
-        self.max_time = env_config.setdefault("max_time", 10)
         self.max_time = self.time_final + (self.t_go_max * 2)
 
         self.env_config = env_config
@@ -417,8 +412,8 @@ class RlMus(MultiAgentEnv):
         self.alive_agents = set()
         for uav_id, action in actions.items():
             # Done uavs don't move
-            if self.uavs[uav_id].done:
-                continue
+            # if self.uavs[uav_id].done:
+            #     continue
 
             self.alive_agents.add(uav_id)
 

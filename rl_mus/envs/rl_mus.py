@@ -24,7 +24,6 @@ class RlMus(MultiAgentEnv):
 
     def __init__(self, env_config={}, render_mode=None):
         super().__init__()
-        # self.dt = env_config.setdefault("dt", 240)
         self.g = env_config.setdefault("g", 9.81)
         self._seed = env_config.setdefault("seed", None)
         self.render_mode = env_config.setdefault("render_mode", "human")
@@ -69,6 +68,7 @@ class RlMus(MultiAgentEnv):
         self._render_height = env_config.setdefault("render_height", 200)
         self._render_width = env_config.setdefault("render_width", 320)
         self._pyb_freq = env_config.setdefault("pybullet_freq", 240)
+        # this is the timestep, default to 1 / 240
         self.dt = 1 / self._pyb_freq
 
         self._physics_client_id = None
@@ -434,9 +434,16 @@ class RlMus(MultiAgentEnv):
 
         self._p.stepSimulation()
 
-        obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
-        reward = {uav.id: self._get_reward(uav) for uav in self.uavs.values()}
-        info = {uav.id: self._get_info(uav) for uav in self.uavs.values()}
+        obs, reward, info = {}, {}, {}
+
+        reward =  {uav_id: self._get_reward(self.uavs[uav_id]) for uav_id in self.uavs.keys()}
+        for uav_id in self.alive_agents:
+            obs[uav_id] = self._get_obs(self.uavs[uav_id])
+            # reward[uav_id] = self._get_reward(self.uavs[uav_id])
+            info[uav_id] = self._get_info(self.uavs[uav_id])
+        # obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
+        # reward = {uav.id: self._get_reward(uav) for uav in self.uavs.values()}
+        # info = {uav.id: self._get_info(uav) for uav in self.uavs.values()}
         # obs = {id: self._get_obs(self.uavs[id]) for id in self.alive_agents}
         # reward = {id: self._get_reward(self.uavs[id]) for id in self.alive_agents}
         # info = {id: self._get_info(self.uavs[id]) for id in self.alive_agents}
@@ -444,7 +451,7 @@ class RlMus(MultiAgentEnv):
         # done = {self.uavs[id].id: self.uavs[id].done for id in self.alive_agents}
         fake_done = {self.uavs[id].id: False for id in self.alive_agents}
         real_done = {self.uavs[id].id: self.uavs[id].done for id in self.alive_agents}
-        fake_done["__all__"] = (
+        real_done["__all__"] = (
             all(v for v in real_done.values()) or self.time_elapsed >= self.max_time
         )
         truncated = {
@@ -460,7 +467,7 @@ class RlMus(MultiAgentEnv):
 
         # old api gym < 0.26.1
         # return obs, reward, done, info
-        return obs, reward, fake_done, fake_done, info
+        return obs, reward, real_done, real_done, info
 
     def _get_info(self, uav):
         """Must be called after _get_reward
@@ -524,13 +531,14 @@ class RlMus(MultiAgentEnv):
         uav.rel_target_vel = uav.rel_vel(target)
         is_reached = uav.rel_target_dist <= self._d_thresh
 
-        if uav.done:
-            # UAV most have finished last time_step, report zero collisions
+        # give penalty for reaching the time limit
+        if self.time_elapsed >= self.max_time:
+            reward -= self._stp_penalty
+            uav.done = True
             return reward
 
-        # give penalty for reaching the time limit
-        elif self.time_elapsed >= self.max_time:
-            reward -= self._stp_penalty
+        if uav.done:
+            # UAV most have finished last time_step, report zero collisions
             return reward
 
         uav.done_dt = t_remaining

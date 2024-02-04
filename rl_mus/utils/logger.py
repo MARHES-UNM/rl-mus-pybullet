@@ -4,6 +4,7 @@ from cycler import cycler
 from copy import deepcopy
 from rl_mus.agents.agents import UavCtrlType
 
+
 class BaseLogger(object):
     def __init__(self, num_uavs=1, log_freq=10) -> None:
         self.num_uavs = num_uavs
@@ -21,7 +22,7 @@ class BaseLogger(object):
 
     def log(self):
         raise NotImplemented()
-    
+
     @property
     def num_samples(self):
         raise NotImplemented()
@@ -30,28 +31,29 @@ class BaseLogger(object):
     def data(self):
         return self._data
 
+
 class UavLogger(BaseLogger):
     def __init__(self, num_uavs=1, log_freq=10, ctrl_type=UavCtrlType.VEL) -> None:
         self.ctrl_type = ctrl_type
-        
+
         super().__init__(num_uavs=num_uavs, log_freq=log_freq)
 
         # used for converting the uav_id to array index
         self._data = {}
-        self._data['log'] = [{"action": [], "state": []} for i in range(self.num_uavs)]
+        self._data["log"] = [{"action": [], "state": []} for i in range(self.num_uavs)]
 
     def log(self, uav_id, state, action):
         array_idx = self.uav_ids[uav_id]
-        self._data['log'][array_idx]["state"].append(state)
-        self._data['log'][array_idx]["action"].append(action)
+        self._data["log"][array_idx]["state"].append(state)
+        self._data["log"][array_idx]["action"].append(action)
 
     @property
     def num_samples(self):
-        self._num_samples = self._data['log'][0]['state'].shape[0]
+        self._num_samples = self._data["log"][0]["state"].shape[0]
 
         return self._num_samples
 
-    def plot(self, title="", plt_action=False):
+    def plot(self, title="", plt_action=False, plt_target=False):
         if self.num_uavs > 1 and self.num_uavs <= 4:
             colors = ["r", "g", "b", "y"]
             linestyle = ["-", "--", ":", "-."]
@@ -60,10 +62,7 @@ class UavLogger(BaseLogger):
             l = [linestyle[i] for i in range(self.num_uavs)]
             plt.rc(
                 "axes",
-                prop_cycle=(
-                    cycler("color", c)
-                    + cycler("linestyle", l)
-                ),
+                prop_cycle=(cycler("color", c) + cycler("linestyle", l)),
             )
 
         num_rows = 8
@@ -77,10 +76,10 @@ class UavLogger(BaseLogger):
         # convert data to numpy arrays
         # for uav_id in range(self.num_uavs):
         for uav_id, idx in self.uav_ids.items():
-            self._data['log'][idx]["state"] = np.array(self._data['log'][idx]["state"])
-            self._data['log'][idx]["action"] = np.array(self._data['log'][idx]["action"])
+            for key in self._data["log"][idx].keys():
+                self._data["log"][idx][key] = np.array(self._data["log"][idx][key])
 
-        self._num_samples = self._data['log'][0]['state'].shape[0]
+        self._num_samples = self._data["log"][0]["state"].shape[0]
         col = 0
         # x, y, z
         row = 0
@@ -89,6 +88,14 @@ class UavLogger(BaseLogger):
         self.plot_uav_data(row, col, 1, ylabel="y (m)")
         row = 2
         self.plot_uav_data(row, col, 2, ylabel="z (m)")
+
+        if plt_target:
+            row = 0
+            self.plot_uav_data(row, col, 0, data_type="target", ylabel="x (m)")
+            row = 1
+            self.plot_uav_data(row, col, 1, data_type="target", ylabel="y (m)")
+            row = 2
+            self.plot_uav_data(row, col, 2, data_type="target", ylabel="z (m)")
 
         # roll, pitch, yaw
         row = 3
@@ -148,7 +155,9 @@ class UavLogger(BaseLogger):
                 row = 2
                 self.plot_uav_data(row, col, 2, data_type="action", ylabel="z (m)")
                 row = 5
-                self.plot_uav_data(row, col, 3, data_type="action", ylabel="$\psi$ (rad)")
+                self.plot_uav_data(
+                    row, col, 3, data_type="action", ylabel="$\psi$ (rad)"
+                )
 
             elif self.ctrl_type == UavCtrlType.RPM:
                 # RPMS
@@ -184,10 +193,11 @@ class UavLogger(BaseLogger):
         t = np.arange(self._num_samples) / self.log_freq
         for uav_id, idx in self.uav_ids.items():
             self.axs[row, col].plot(
-                t, self._data['log'][idx][data_type][:, data_idx], label=f"uav_{uav_id}"
+                t, self._data["log"][idx][data_type][:, data_idx], label=f"uav_{uav_id}"
             )
         self.axs[row, col].set_xlabel("t (s)")
         self.axs[row, col].set_ylabel(ylabel)
+
 
 class EnvLogger(UavLogger):
     def __init__(self, num_uavs=1, log_config={}) -> None:
@@ -206,7 +216,7 @@ class EnvLogger(UavLogger):
         self._info_items = self._log_config.setdefault("info_items", [])
 
         self._data = {}
-        self._data['eps_num'] = []
+        self._data["eps_num"] = []
         data_dictionary = {}
 
         for key in self._obs_items:
@@ -214,35 +224,36 @@ class EnvLogger(UavLogger):
         for key in self._info_items:
             data_dictionary[key] = []
         if self._log_reward:
-            data_dictionary['reward'] = []
-        data_dictionary['action'] = []
+            data_dictionary["reward"] = []
+        data_dictionary["action"] = []
 
-        self._data['log'] = [deepcopy(data_dictionary) for i in range(self.num_uavs)]
+        self._data["log"] = [deepcopy(data_dictionary) for i in range(self.num_uavs)]
 
     def log(self, eps_num, info, obs, reward, action):
-        
-        self._data['eps_num'].append(eps_num)
+
+        self._data["eps_num"].append(eps_num)
 
         for uav_id, value in obs.items():
             array_idx = self.uav_ids[uav_id]
 
             for k, v in value.items():
                 if k in self._obs_items:
-                    self.data['log'][array_idx][k].append(v)
+                    self.data["log"][array_idx][k].append(v)
 
             for k, v in info[uav_id].items():
                 if k in self._info_items:
-                    self.data['log'][array_idx][k].append(v)
+                    self.data["log"][array_idx][k].append(v)
 
             if self._log_reward:
-                self.data['log'][array_idx]['reward'].append(reward[uav_id])
-            
-            self.data['log'][array_idx]['action'].append(action[uav_id])
+                self.data["log"][array_idx]["reward"].append(reward[uav_id])
+
+            self.data["log"][array_idx]["action"].append(action[uav_id])
 
     @property
     def num_samples(self):
-        return len(self.data['eps_num'])
-    
+        return len(self.data["eps_num"])
+
+
 def plot_traj(uav_des_traj, uav_trajectory, title="", scale=240.0):
     fig, axs = plt.subplots(4, 2, sharex=False, figsize=(12, 10), layout="constrained")
     t_axis = np.arange(uav_trajectory.shape[0]) / scale

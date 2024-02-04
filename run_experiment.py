@@ -39,9 +39,7 @@ def setup_stream(logging_level=logging.DEBUG):
     logger.setLevel(logging_level)
 
 
-def get_algo_config(config):
-
-    env_config = config["env_config"]
+def get_obs_act_space(env_config):
 
     # Need to create a temporary environment to get obs and action space
     renders = env_config["renders"]
@@ -51,6 +49,15 @@ def get_algo_config(config):
     env_action_space = temp_env.action_space[temp_env.first_uav_id]
     temp_env.close()
     env_config["renders"] = renders
+
+    return env_obs_space, env_action_space
+
+
+def get_algo_config(config):
+
+    env_config = config["env_config"]
+
+    env_obs_space, env_action_space = get_obs_act_space(env_config)
 
     algo_config = (
         get_trainable_cls(config["exp_config"]["run"])
@@ -186,6 +193,10 @@ def experiment(args):
         args.config["fname"] = output_folder / "result.json"
     experiment_num = args.experiment_num
     exp_config = args.config
+
+    if args.checkpoint:
+        exp_config["exp_config"]["checkpoint"] = args.checkpoint
+
     max_num_episodes = args.max_num_episodes
 
     fname = exp_config.setdefault("fname", None)
@@ -213,9 +224,12 @@ def experiment(args):
 
             algo = Policy.from_checkpoint(checkpoint)
 
+            env_obs_space, env_action_space = get_obs_act_space(env_config)
             # need preprocesor here if using policy
             # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
             prep = get_preprocessor(env_obs_space)(env_obs_space)
+
+            env = RlMus(env_config)
         else:
             use_policy = False
             algo = (
@@ -228,7 +242,7 @@ def experiment(args):
                 .build()
             )
 
-    env = algo.workers.local_worker().env
+            env = algo.workers.local_worker().env
 
     env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
     for uav in env.uavs.values():
@@ -350,6 +364,7 @@ def parse_arguments():
     subparsers = parser.add_subparsers(dest="command")
     test_sub = subparsers.add_parser("test")
     test_sub.add_argument("-d", "--debug")
+    test_sub.add_argument("--checkpoint")
     test_sub.add_argument("-v", help="version number of experiment")
     test_sub.add_argument("--max_num_episodes", type=int, default=1)
     test_sub.add_argument("--experiment_num", type=int, default=0)

@@ -134,6 +134,12 @@ class Entity:
         else:
             dist = np.linalg.norm(self.pos - pos)
             return dist <= (self.rad + rad)
+        
+    def rel_dist(self, entity):
+        return np.linalg.norm(self.pos - entity.pos)
+
+    def rel_vel(self, entity):
+        return np.linalg.norm(self.vel - entity.vel)
 
     @property
     def state(self):

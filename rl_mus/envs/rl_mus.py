@@ -45,7 +45,7 @@ class RlMus(MultiAgentEnv):
         self.t_go_max = env_config.setdefault("t_go_max", 2.0)
         self.t_go_n = env_config.setdefault("t_go_n", 1.0)
         self._beta = env_config.setdefault("beta", 0.01)
-        self._d_thresh = env_config.setdefault("d_thresh", 0.01)  # uav.rad + pad.rad
+        self._d_thresh = env_config.setdefault("d_thresh", 0.1)  # uav.rad + target.rad
         self._tgt_reward = env_config.setdefault("tgt_reward", 100.0)
         self._stp_penalty = env_config.setdefault("stp_penalty", 100.0)
         self._dt_reward = env_config.setdefault("dt_reward", 0.0)
@@ -511,11 +511,12 @@ class RlMus(MultiAgentEnv):
 
     def _get_reward(self, uav):
         reward = 0.0
+        target = self.targets[uav.target_id]
         t_remaining = self.time_final - self.time_elapsed
         uav.uav_collision = 0.0
         uav.obs_collision = 0.0
-        uav.rel_target_dist = np.linalg.norm(uav.pos - self.targets[uav.target_id].pos)
-        uav.rel_target_vel = np.linalg.norm(uav.vel - self.targets[uav.target_id].vel)
+        uav.rel_target_dist = uav.rel_dist(target)
+        uav.rel_target_vel = uav.rel_vel(target)
         is_reached = uav.rel_target_dist <= self._d_thresh
 
         if uav.done:

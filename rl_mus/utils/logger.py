@@ -182,19 +182,11 @@ class UavLogger(BaseLogger):
 
         plt.show()
 
-    def plot_uav_data(
-        self,
-        row,
-        col,
-        data_idx,
-        data_type="state",
-        ylabel="",
-    ):
+    def plot_uav_data(self, row, col, data_idx, data_type="state", ylabel=""):
         t = np.arange(self._num_samples) / self.log_freq
         for uav_id, idx in self.uav_ids.items():
-            self.axs[row, col].plot(
-                t, self._data["log"][idx][data_type][:, data_idx], label=f"uav_{uav_id}"
-            )
+            data = self._data["log"][idx][data_type][:, data_idx]
+            self.axs[row, col].plot(t, data, label=f"uav_{uav_id}")
         self.axs[row, col].set_xlabel("t (s)")
         self.axs[row, col].set_ylabel(ylabel)
 
@@ -252,6 +244,79 @@ class EnvLogger(UavLogger):
     @property
     def num_samples(self):
         return len(self.data["eps_num"])
+
+    def plot_env(self, title=""):
+
+        if self.num_uavs > 1 and self.num_uavs <= 4:
+            colors = ["r", "g", "b", "y"]
+            linestyle = ["-", "--", ":", "-."]
+
+            c = [colors[i] for i in range(self.num_uavs)]
+            l = [linestyle[i] for i in range(self.num_uavs)]
+            plt.rc(
+                "axes",
+                prop_cycle=(cycler("color", c) + cycler("linestyle", l)),
+            )
+
+        num_rows = 7
+        num_cols = 1
+
+        self.fig, self.axs = plt.subplots(
+            num_rows, num_cols, sharex=True, figsize=(14, 12)
+        )
+        self.fig.suptitle(title)
+
+        # convert data to numpy arrays
+        # for uav_id in range(self.num_uavs):
+        for uav_id, idx in self.uav_ids.items():
+            for key in self._data["log"][idx].keys():
+                self._data["log"][idx][key] = np.array(self._data["log"][idx][key])
+
+        self._num_samples = self._data["log"][0]["state"].shape[0]
+        col = 0
+        row = 0
+        self.plot_info_data(row, data_type="uav_target_reached", ylabel="tgt reached")
+        row = 1
+        self.plot_info_data(row, data_type="uav_done_dt", ylabel="done dt")
+        row = 2
+        self.plot_info_data(row, data_type="reward", ylabel="reward")
+        row = 3
+        self.plot_info_data(row, data_type="uav_collision", ylabel="uav_col")
+        row = 4
+        self.plot_info_data(row, data_type="obstacle_collision", ylabel="ncfo_col")
+        row = 5
+        self.plot_info_data(
+            row,
+            data_type="uav_rel_dist",
+            ylabel="$\parallel \Delta \mathbf{r} \parallel$",
+        )
+        row = 6
+        self.plot_info_data(
+            row,
+            data_type="uav_rel_vel",
+            ylabel="$\parallel \Delta \mathbf{v} \parallel$",
+        )
+
+        for row in range(num_rows):
+            self.axs[row].grid(True)
+            self.axs[row].legend(loc="upper right", frameon=True)
+
+        self.fig.subplots_adjust(hspace=0)
+
+        plt.show()
+
+    def plot_info_data(
+        self,
+        row,
+        data_type="reward",
+        ylabel="",
+    ):
+        t = np.arange(self._num_samples) / self.log_freq
+        for uav_id, idx in self.uav_ids.items():
+            data = self._data["log"][idx][data_type]
+            self.axs[row].plot(t, data, label=f"uav_{uav_id}")
+        self.axs[row].set_xlabel("t (s)")
+        self.axs[row].set_ylabel(ylabel)
 
 
 def plot_traj(uav_des_traj, uav_trajectory, title="", scale=240.0):

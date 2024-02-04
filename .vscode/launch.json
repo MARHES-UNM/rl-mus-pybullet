@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${cwd}/run_experiment.py",
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "cwd": "${workspaceFolder}",
             "args": [
                 "train",

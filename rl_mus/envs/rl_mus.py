@@ -411,9 +411,10 @@ class RlMus(MultiAgentEnv):
         # step uavs
         self.alive_agents = set()
         for uav_id, action in actions.items():
-            # Done uavs don't move
-            if self.uavs[uav_id].done:
-                continue
+
+            # # Done uavs don't move
+            # if self.uavs[uav_id].done:
+            #     continue
 
             self.alive_agents.add(uav_id)
 
@@ -568,7 +569,7 @@ class RlMus(MultiAgentEnv):
         # ):
         #     reward += -10
         else:
-            reward -= self._beta * (
+            reward -= self._beta / self._pyb_freq * (
                 uav.rel_target_dist
                 / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
             )
@@ -719,6 +720,7 @@ class RlMus(MultiAgentEnv):
                 self._physics_client_id,
                 g=self.g,
                 ctrl_type=self.uav_ctrl_type,
+                pyb_freq=self._pyb_freq
             )
             if self.first_uav_id is None:
                 self.first_uav_id = uav.id

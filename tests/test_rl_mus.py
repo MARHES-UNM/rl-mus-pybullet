@@ -190,7 +190,7 @@ class TestRlMus(unittest.TestCase):
 
     def test_uav_apf_vel_control(self):
 
-        env = RlMus(env_config={"num_uavs": 4, "renders": True})
+        env = RlMus(env_config={"num_uavs": 4, "renders": True, "pybullet_freq": 240})
         log_config = {
             "obs_items": ["state", "target"],
             "info_items": [
@@ -202,8 +202,8 @@ class TestRlMus(unittest.TestCase):
                 "uav_done_dt",
             ],
             "log_reward": True,
-            "log_freq": 240,
-            "env_freq": 240,
+            "log_freq": env.env_freq,
+            "env_freq": env.env_freq,
         }
 
         env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
@@ -248,19 +248,27 @@ class TestRlMus(unittest.TestCase):
                 )
 
             env.render()
-            time.sleep(1 / 240)
+            time.sleep(1 / env.env_freq)
 
             if done["__all__"]:
                 obs, info = env.reset()
+                # env_logger.plot_env()
+                # env_logger.plot(plt_action=True, plt_target=True)
+
+                # env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
+
+                # for uav in env.uavs.values():
+                #     env_logger.add_uav(uav.id)
+
 
         self.assertEqual(
-            env_logger.num_samples, num_timesteps / env.env_freq * env_logger.log_freq
+                env_logger.num_samples, num_timesteps / env.env_freq * env_logger.log_freq
         )
 
         env_logger.plot_env()
-        # env_logger.plot(plt_action=True, plt_target=True)
-        env.close()
+        env_logger.plot(plt_action=True, plt_target=True)
 
+        env.close()
     # def test_time_coordinated_control_mat(self):
     #     tf = 30.0
     #     tf = 20.0
@@ -1029,7 +1037,7 @@ def suite():
     suite.addTest(TestRlMus("test_termination"))
     # suite.addTest(TestRlMus("test_uav_go_to_goal"))
     # suite.addTest(TestRlMus("test_uav_vel_control"))
-    # suite.addTest(TestRlMus("test_uav_apf_vel_control"))
+    suite.addTest(TestRlMus("test_uav_apf_vel_control"))
 
     return suite
 

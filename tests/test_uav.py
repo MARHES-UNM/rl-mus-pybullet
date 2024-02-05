@@ -145,6 +145,28 @@ class TestUav(unittest.TestCase):
 
         plotter.plot(title="Test UAV velocity control", plt_action=True)
 
+    def test_uav_fast_vel_tracking(self):
+        self.uav = Uav(
+            [1, 1, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
+        )
+
+        plotter = UavLogger()
+        plotter.add_uav(self.uav.id)
+
+        time_to_change_vel = .1 * 240  # every 2 secs
+        vel_des = np.zeros(3)
+        max_vel = self.uav.vel_lim * 0.5
+        for i in range(10 * 240):
+            if i % time_to_change_vel == 0:
+                vel_des = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
+
+            self.uav.step(vel_des)
+            p.stepSimulation()
+
+            plotter.log(uav_id=self.uav.id, state=self.uav.state, action=vel_des)
+
+        plotter.plot(title="Test Fast velocity tracking", plt_action=True)
+
     # @unittest.skip
     def test_uav_rand_vel_tracking(self):
         self.uav = Uav(

@@ -132,10 +132,11 @@ class RlMus(MultiAgentEnv):
                             shape=(self.num_uavs - 1 + self.num_obstacles,),
                             dtype=np.float32,
                         ),
+                        # TODO: need to fix for custom network
                         "other_uav_obs": spaces.Box(
                             low=-np.inf,
                             high=np.inf,
-                            shape=(self.num_uavs - 1, num_uav_state_shape[0]),
+                            shape=((self.num_uavs - 1) * num_uav_state_shape[0],),
                             dtype=np.float32,
                         ),
                         # "obstacles": spaces.Box(
@@ -516,7 +517,7 @@ class RlMus(MultiAgentEnv):
             "done_dt": np.array(
                 [self.time_final - self._time_elapsed], dtype=np.float32
             ),
-            "other_uav_obs": other_uav_states.astype(np.float32),
+            "other_uav_obs": other_uav_states.reshape(-1).astype(np.float32),
             # TODO: handle obstacles
             # "obstacles": obstacles_to_add.astype(np.float32),
             "constraint": self._get_uav_constraint(uav).astype(np.float32),
@@ -668,7 +669,7 @@ class RlMus(MultiAgentEnv):
                     i, 0, physicsClientId=self._physics_client_id
                 )
             p.resetDebugVisualizerCamera(
-                cameraDistance=3,
+                cameraDistance=5,
                 cameraYaw=-15,
                 cameraPitch=-45,
                 cameraTargetPosition=[0, 0, 0],

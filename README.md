@@ -10,13 +10,15 @@
 [x] test out the environment
 [ ] add obstacle to environment
 [ ] fix constraint
-[ ] fix custom callbacks
-[ ] plot environment specific items (rewards, target reached, dt time, number of collisions)
+[x] fix custom callbacks
+[x] plot environment specific items (rewards, target reached, dt time, number of collisions)
 [ ] Train with RL lib
     https://colab.research.google.com/drive/1sTGKVldqzQf5R2kyBrmBkvdk6-bptFEJ#scrollTo=C4_iJOkEsMwv
 [] Turn environment into python package
     https://packaging.python.org/en/latest/tutorials/packaging-projects/
-
+[] Consider multi hierichical reinforcement learning
+    https://medium.com/@jmugan/rllib-for-deep-hierarchical-multiagent-reinforcement-learning-6aa96cdee154
+    https://github.com/DeUmbraTX/practical_rllib_tutorial
 
 This repo is mostly a refactor of the works done in [gym-pybullet-drones
 ](https://github.com/utiasDSL/gym-pybullet-drones).
@@ -35,6 +37,7 @@ https://github.com/Zhehui-Huang/quad-swarm-rl/tree/master
 Install pytorch: 
 https://pytorch.org/get-started/locally/
 install pytorch (CUDA):
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 Dynamics of the crazyflie:
 https://arxiv.org/pdf/1608.05786.pdf
@@ -54,3 +57,5 @@ https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/
     [The GRASP Micro-UVA testbed](https://ieeexplore.ieee.org/document/5569026)
 
     [Minimum snap trajectory generation and control for quadrotors](https://ieeexplore.ieee.org/document/5980409)
+
+    [Learning Agile Quadrotor Flight in Restricted Environments with Safety Guarantees](https://ieeexplore.ieee.org/document/10403939)

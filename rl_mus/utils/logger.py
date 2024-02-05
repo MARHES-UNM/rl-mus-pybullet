@@ -33,7 +33,7 @@ class BaseLogger(object):
 
 
 class UavLogger(BaseLogger):
-    def __init__(self, num_uavs=1, log_freq=10, ctrl_type=UavCtrlType.VEL) -> None:
+    def __init__(self, num_uavs=1, log_freq=240, ctrl_type=UavCtrlType.VEL) -> None:
         self.ctrl_type = ctrl_type
 
         super().__init__(num_uavs=num_uavs, log_freq=log_freq)

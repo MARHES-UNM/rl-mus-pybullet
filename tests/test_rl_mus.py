@@ -16,6 +16,9 @@ class TestRlMus(unittest.TestCase):
     def setUp(self):
         pass
 
+    def test_check_env_single(self):
+        check_env(RlMus({"num_uavs": 1}))
+
     def test_check_env(self):
         check_env(RlMus({}))
 
@@ -39,17 +42,16 @@ class TestRlMus(unittest.TestCase):
                         actions.pop(uav_id)
                         last_done_id = uav_id
             obs, reward, done, _, info = env.step(actions)
-                
+
             if i > 1 and last_done_id is not None:
                 self.assertFalse(last_done_id in done.keys())
                 # for uav_id in done.keys():
-                    # self.assertTrue(uav_id in actions.keys())
-                    # if done[uav_id]:
-                        # actions.pop(uav_id)
- 
+                # self.assertTrue(uav_id in actions.keys())
+                # if done[uav_id]:
+                # actions.pop(uav_id)
+
             # self.assertFalse(1 in actions.keys())
             # self.assertFalse(1 in done.keys())
-
 
     # def test_observation_space(self):
     #     env = RlMus({"num_uavs": 1, "num_obstacles": 0})
@@ -77,7 +79,7 @@ class TestRlMus(unittest.TestCase):
     #     self.assertEqual(obs_space[0]["other_uav_obs"].shape[0], 1)
 
     def test_log_env(self):
-        env = RlMus(env_config={"num_uavs": 4, "renders": False})
+        env = RlMus(env_config={"num_uavs": 1, "renders": False})
         log_config = {
             "obs_items": ["state", "target"],
             "info_items": ["uav_collision"],
@@ -188,6 +190,82 @@ class TestRlMus(unittest.TestCase):
 
         env.close()
 
+    def apf_uav_controller(self, agent, target, ka=3):
+        agent_pos = agent.pos
+        target_pos = target.pos
+
+        dist_to_target = agent.rel_dist(target) + 0.001
+
+        target_star = 1 * (target.rad + agent.rad)
+        if dist_to_target <= target_star:
+            des_v = -ka * (agent_pos - target_pos)
+
+        else:
+            des_v = (
+                -ka
+                * (1 / dist_to_target**1)
+                * ((agent_pos - target_pos) / dist_to_target)
+            )
+
+        return des_v
+
+    def test_uav_apf_vel_control_single(self):
+
+        env = RlMus(env_config={"num_uavs": 1, "renders": True, "pybullet_freq": 240})
+        log_config = {
+            "obs_items": ["state", "target"],
+            "info_items": [
+                "obstacle_collision",
+                "uav_rel_dist",
+                "uav_rel_vel",
+                "uav_collision",
+                "uav_target_reached",
+                "uav_done_dt",
+            ],
+            "log_reward": True,
+            "log_freq": env.env_freq,
+            "env_freq": env.env_freq,
+        }
+
+        env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
+
+        for uav in env.uavs.values():
+            env_logger.add_uav(uav.id)
+
+        obs, info = env.reset()
+        num_seconds = 6
+        num_timesteps = num_seconds * env.env_freq
+
+        eps_num = 0
+        for time_step in range(num_timesteps):
+            actions = {uav.id: np.zeros(3) for uav in env.uavs.values()}
+            for uav in env.uavs.values():
+                des_v = self.apf_uav_controller(uav, env.targets[uav.target_id])
+                actions[uav.id] = des_v
+
+            obs, reward, done, truncated, info = env.step(actions)
+
+            if time_step % (env.env_freq / env_logger.log_freq) == 0:
+                env_logger.log(
+                    eps_num=eps_num, info=info, obs=obs, reward=reward, action=actions
+                )
+
+            env.render()
+            time.sleep(1 / env.env_freq)
+
+            if done["__all__"]:
+                obs, info = env.reset()
+                eps_num += 1
+
+        self.assertEqual(
+            env_logger.num_samples, num_timesteps / env.env_freq * env_logger.log_freq
+        )
+
+        env_logger.plot_env()
+        env_logger.plot(plt_action=True, plt_target=True)
+
+        env.close()
+
     def test_uav_apf_vel_control(self):
 
         env = RlMus(env_config={"num_uavs": 4, "renders": True, "pybullet_freq": 240})
@@ -212,32 +290,14 @@ class TestRlMus(unittest.TestCase):
             env_logger.add_uav(uav.id)
 
         obs, info = env.reset()
-        num_seconds = 12
+        num_seconds = 6
         num_timesteps = num_seconds * env.env_freq
 
-        ka = 20
         eps_num = 0
         for time_step in range(num_timesteps):
             actions = {uav.id: np.zeros(3) for uav in env.uavs.values()}
             for uav in env.uavs.values():
-                agent_pos = uav.pos
-                target = env.targets[uav.target_id]
-                target_pos = target.pos
-
-                dist_to_target = uav.rel_dist(target)
-
-                target_star = 1 * (target.rad + uav.rad)
-                if dist_to_target <= target_star:
-                    des_v = -ka * (agent_pos - target_pos)
-                    des_v = np.zeros(3)
-
-                else:
-                    des_v = (
-                        -ka
-                        * (1 / dist_to_target**1)
-                        * ((agent_pos - target_pos) / dist_to_target)
-                    )
-
+                des_v = self.apf_uav_controller(uav, env.targets[uav.target_id])
                 actions[uav.id] = des_v
 
             obs, reward, done, truncated, info = env.step(actions)
@@ -252,6 +312,7 @@ class TestRlMus(unittest.TestCase):
 
             if done["__all__"]:
                 obs, info = env.reset()
+                eps_num += 1
                 # env_logger.plot_env()
                 # env_logger.plot(plt_action=True, plt_target=True)
 
@@ -260,15 +321,15 @@ class TestRlMus(unittest.TestCase):
                 # for uav in env.uavs.values():
                 #     env_logger.add_uav(uav.id)
 
-
         self.assertEqual(
-                env_logger.num_samples, num_timesteps / env.env_freq * env_logger.log_freq
+            env_logger.num_samples, num_timesteps / env.env_freq * env_logger.log_freq
         )
 
         env_logger.plot_env()
         env_logger.plot(plt_action=True, plt_target=True)
 
         env.close()
+
     # def test_time_coordinated_control_mat(self):
     #     tf = 30.0
     #     tf = 20.0
@@ -1032,12 +1093,14 @@ class TestRlMus(unittest.TestCase):
 # Everything below is to make sure that the tests are run in a specific order.
 def suite():
     suite = unittest.TestSuite()
+    suite.addTest(TestRlMus("test_check_env_single"))
     suite.addTest(TestRlMus("test_check_env"))
-    # suite.addTest(TestRlMus("test_log_env"))
+    suite.addTest(TestRlMus("test_log_env"))
     suite.addTest(TestRlMus("test_termination"))
     # suite.addTest(TestRlMus("test_uav_go_to_goal"))
     # suite.addTest(TestRlMus("test_uav_vel_control"))
     suite.addTest(TestRlMus("test_uav_apf_vel_control"))
+    suite.addTest(TestRlMus("test_uav_apf_vel_control_single"))
 
     return suite
 

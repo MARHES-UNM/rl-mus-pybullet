@@ -380,10 +380,10 @@ def parse_arguments():
     train_sub.add_argument("--smoke_test", action="store_true", help="run quicktest")
 
     train_sub.add_argument(
-        "--stop-iters", type=int, default=1000, help="Number of iterations to train."
+        "--stop_iters", type=int, default=1000, help="Number of iterations to train."
     )
     train_sub.add_argument(
-        "--stop-timesteps",
+        "--stop_timesteps",
         type=int,
         default=int(30e6),
         help="Number of timesteps to train.",

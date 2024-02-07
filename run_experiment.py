@@ -116,11 +116,11 @@ def train(args):
         # See for specific ppo config: https://docs.ray.io/en/latest/rllib/rllib-algorithms.html#ppo
         # See for more on PPO hyperparameters: https://medium.com/aureliantactics/ppo-hyperparameters-and-ranges-6fc2d29bccbe
         .training(
-            lr=5e-5,
+            lr=tune.grid_search([5e-5, 5e-8, 5e-3]),
             use_gae=True,
             use_critic=True,
             lambda_=0.95,
-            train_batch_size=65536*24,
+            train_batch_size=65536*100,
             gamma=0.99,
             num_sgd_iter=32,
             sgd_minibatch_size=4096*100,

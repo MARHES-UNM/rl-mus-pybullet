@@ -9,6 +9,7 @@ cloudpickle==3.0.0
 contourpy==1.2.0
 cycler==0.10.0
 dm-tree==0.1.8
+exceptiongroup==1.2.0
 filelock==3.9.0
 fonttools==4.47.2
 frozenlist==1.4.1
@@ -23,6 +24,7 @@ Gymnasium==0.26.3
 gymnasium-notices==0.0.1
 idna==3.4
 imageio==2.33.1
+iniconfig==2.0.0
 Jinja2==3.1.2
 jsonschema==4.21.1
 jsonschema-specifications==2023.12.1
@@ -53,6 +55,7 @@ oauthlib==3.2.2
 packaging==23.2
 pandas==2.2.0
 pillow==10.2.0
+pluggy==1.4.0
 protobuf==4.23.4
 pyarrow==15.0.0
 pyasn1==0.5.1
@@ -60,6 +63,7 @@ pyasn1-modules==0.3.0
 pybullet==3.2.6
 Pygments==2.17.2
 pyparsing==3.1.1
+pytest==8.0.0
 python-dateutil==2.8.2
 pytz==2023.3.post1
 PyYAML==6.0.1
@@ -74,6 +78,7 @@ rpds-py==0.17.1
 rsa==4.9
 scikit-image==0.22.0
 scipy==1.12.0
+seaborn==0.13.2
 six==1.16.0
 stable-baselines3==1.5.0
 sympy==1.12
@@ -81,6 +86,7 @@ tensorboard==2.15.1
 tensorboard-data-server==0.7.2
 tensorboardX==2.6.2.2
 tifffile==2023.12.9
+tomli==2.0.1
 torch==2.2.0+cu118
 torchaudio==2.2.0+cu118
 torchvision==0.17.0+cu118

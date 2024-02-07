@@ -123,7 +123,7 @@ def train(args):
             train_batch_size=65536*24,
             gamma=0.99,
             num_sgd_iter=32,
-            sgd_minibatch_size=4096*24,
+            sgd_minibatch_size=4096*100,
             vf_clip_param=10.0,
             vf_loss_coeff=0.5,
             clip_param=0.2,

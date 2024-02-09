@@ -14,7 +14,9 @@ from rl_mus.utils.logger import EnvLogger
 
 class TestRlMus(unittest.TestCase):
     def setUp(self):
-        pass
+        self.num_short_time = 2
+        self.num_med_time = 4
+        self.num_long_time = 10
 
     def test_check_env_single(self):
         check_env(RlMus({"num_uavs": 1}))
@@ -33,7 +35,7 @@ class TestRlMus(unittest.TestCase):
         obs, info = env.reset()
         done = None
         last_done_id = None
-        for i in range(1000):
+        for i in range(100):
             actions = env.action_space.sample()
 
             if i > 1:
@@ -45,13 +47,6 @@ class TestRlMus(unittest.TestCase):
 
             if i > 1 and last_done_id is not None:
                 self.assertFalse(last_done_id in done.keys())
-                # for uav_id in done.keys():
-                # self.assertTrue(uav_id in actions.keys())
-                # if done[uav_id]:
-                # actions.pop(uav_id)
-
-            # self.assertFalse(1 in actions.keys())
-            # self.assertFalse(1 in done.keys())
 
     # def test_observation_space(self):
     #     env = RlMus({"num_uavs": 1, "num_obstacles": 0})
@@ -92,7 +87,7 @@ class TestRlMus(unittest.TestCase):
             env_logger.add_uav(uav.id)
 
         obs, info = env.reset()
-        num_seconds = 10
+        num_seconds = self.num_med_time
         num_timesteps = num_seconds * env.env_freq
 
         eps_num = 0
@@ -119,12 +114,11 @@ class TestRlMus(unittest.TestCase):
         env = RlMus(env_config={"renders": True, "num_uavs": 4})
         obs, info = env.reset()
 
-        for i in range(10 * 240):
+        num_timesteps = self.num_short_time * env.env_freq
+        for i in range(num_timesteps):
             actions = env.action_space.sample()
-
             obs, reward, done, truncated, info = env.step(actions)
             env.render()
-            # time.sleep(1/ 240)
 
     def test_uav_go_to_goal(self):
         env = RlMus(
@@ -136,12 +130,13 @@ class TestRlMus(unittest.TestCase):
         )
         obs, info = env.reset()
 
-        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
+        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type, log_freq=env.env_freq)
 
         for uav in env.uavs.values():
             plotter.add_uav(uav.id)
 
-        for i in range(10 * 240):
+        num_timesteps = self.num_med_time * env.env_freq
+        for i in range(num_timesteps):
             actions = {uav.id: np.zeros(4) for uav in env.uavs.values()}
 
             for uav in env.uavs.values():
@@ -168,13 +163,14 @@ class TestRlMus(unittest.TestCase):
         )
         obs, info = env.reset()
 
-        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type)
+        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type, log_freq=env.env_freq)
 
         for uav in env.uavs.values():
             plotter.add_uav(uav.id)
 
         actions = {uav.id: np.zeros(3) for uav in env.uavs.values()}
-        for i in range(10 * 240):
+        num_timesteps = self.num_med_time * env.env_freq
+        for i in range(num_timesteps):
             for uav in env.uavs.values():
                 if i % (240) == 0:
                     actions = env.action_space.sample()
@@ -233,7 +229,7 @@ class TestRlMus(unittest.TestCase):
             env_logger.add_uav(uav.id)
 
         obs, info = env.reset()
-        num_seconds = 6
+        num_seconds = self.num_med_time
         num_timesteps = num_seconds * env.env_freq
 
         eps_num = 0
@@ -290,7 +286,7 @@ class TestRlMus(unittest.TestCase):
             env_logger.add_uav(uav.id)
 
         obs, info = env.reset()
-        num_seconds = 6
+        num_seconds = self.num_med_time
         num_timesteps = num_seconds * env.env_freq
 
         eps_num = 0

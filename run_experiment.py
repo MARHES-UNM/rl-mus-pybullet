@@ -116,14 +116,14 @@ def train(args):
         # See for specific ppo config: https://docs.ray.io/en/latest/rllib/rllib-algorithms.html#ppo
         # See for more on PPO hyperparameters: https://medium.com/aureliantactics/ppo-hyperparameters-and-ranges-6fc2d29bccbe
         .training(
-            lr=tune.grid_search([5e-5, 5e-8, 5e-3]),
+            lr=5e-5,
             use_gae=True,
             use_critic=True,
             lambda_=0.95,
-            train_batch_size=65536,
+            train_batch_size=65536*24,
             gamma=0.99,
             num_sgd_iter=32,
-            sgd_minibatch_size=4096,
+            sgd_minibatch_size=4096*50,
             vf_clip_param=10.0,
             vf_loss_coeff=0.5,
             clip_param=0.2,
@@ -299,7 +299,8 @@ def experiment(args):
             num_episodes += 1
 
             if plot_results:
-                env_logger.plot(plt_action=True)
+                env_logger.plot_env()
+                env_logger.plot(plt_action=True, plt_target=True)
 
             if num_episodes == max_num_episodes:
                 end_time = time() - start_time

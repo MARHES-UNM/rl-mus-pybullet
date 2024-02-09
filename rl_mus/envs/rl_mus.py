@@ -581,13 +581,13 @@ class RlMus(MultiAgentEnv):
         # ):
         #     reward += -10
         else:
-            reward -= self._beta * (
+            reward += -self._beta * (
                 uav.rel_target_dist
                 / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
             )
 
         # give small penalty for having large relative velocity
-        # reward += -self._beta * uav.rel_target_vel
+        reward += -self._beta * uav.rel_target_vel
 
         # neg reward if uav collides with other uavs
         for other_uav in self.uavs.values():

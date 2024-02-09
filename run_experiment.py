@@ -98,17 +98,17 @@ def train(args):
     train_config = (
         get_algo_config(args.config).rollouts(
             num_rollout_workers=(
-                4 if args.smoke_test else args.num_rollout_workers
+                1 if args.smoke_test else args.num_rollout_workers
             ),  # set 0 to main worker run sim
             num_envs_per_worker=args.num_envs_per_worker,
-            create_env_on_local_worker=True,
-            rollout_fragment_length = "auto",
+            # create_env_on_local_worker=True,
+            # rollout_fragment_length="auto",
             batch_mode="complete_episodes",
         )
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
         .resources(
             num_gpus=0 if args.smoke_test else num_gpus,
-            # num_learner_workers=1,
+            num_learner_workers=1,
             num_gpus_per_learner_worker=0 if args.smoke_test else args.gpu,
         )
         # See for changing model options https://docs.ray.io/en/latest/rllib/rllib-models.html
@@ -120,10 +120,10 @@ def train(args):
             use_gae=True,
             use_critic=True,
             lambda_=0.95,
-            train_batch_size=65536*24,
+            train_batch_size=65536,
             gamma=0.99,
             num_sgd_iter=32,
-            sgd_minibatch_size=4096*50,
+            sgd_minibatch_size=4096,
             vf_clip_param=10.0,
             vf_loss_coeff=0.5,
             clip_param=0.2,

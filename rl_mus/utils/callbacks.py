@@ -82,6 +82,7 @@ class TrainCallback(DefaultCallbacks):
         agent_ids = episode.get_agents()
         num_agents = len(agent_ids)
         cum_uav_target_reached = 0.0
+        cum_uav_crashed = 0.0
         cum_uav_done_dt = 0.0
         cum_uav_rel_dist = 0.0
 
@@ -90,6 +91,7 @@ class TrainCallback(DefaultCallbacks):
             last_info = episode._last_infos[agent_id]
             cum_uav_rel_dist += last_info["uav_rel_dist"]
             cum_uav_target_reached += last_info["uav_target_reached"]
+            cum_uav_crashed += last_info["uav_crashed"]
             cum_uav_done_dt += last_info["uav_done_dt"]
 
         obstacle_collisions = (
@@ -102,6 +104,9 @@ class TrainCallback(DefaultCallbacks):
 
         uav_target_reached = cum_uav_target_reached / num_agents
         episode.custom_metrics["num_uav_target_reached"] = uav_target_reached
+
+        uav_crashed = cum_uav_crashed / num_agents
+        episode.custom_metrics["num_uav_crashed"] = uav_crashed
 
         uav_done_dt = cum_uav_done_dt / num_agents
         episode.custom_metrics["uav_done_dt"] = uav_done_dt

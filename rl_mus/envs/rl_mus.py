@@ -497,6 +497,7 @@ class RlMus(MultiAgentEnv):
             "uav_rel_vel": uav.rel_target_vel,
             "uav_collision": uav.uav_collision,
             "uav_target_reached": 1.0 if uav.target_reached else 0.0,
+            "uav_crashed": 1.0 if uav.crashed else 0.0,
             "uav_done_dt": uav.done_dt,
         }
 
@@ -588,8 +589,10 @@ class RlMus(MultiAgentEnv):
             # reward += -self._beta * uav.rel_target_dist
 
         if uav.pos[2] <= 0.02:
-            reward += -10
+            reward += -100
             uav.done = True
+            uav.crashed = True
+
         # give small penalty for having large relative velocity
         reward += -self._beta * uav.rel_target_vel
 

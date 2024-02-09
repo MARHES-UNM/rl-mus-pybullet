@@ -153,6 +153,38 @@ class TestRlMus(unittest.TestCase):
         plotter.plot(plt_action=True)
         env.close()
 
+    def test_uav_hover(self):
+        env = RlMus(
+            env_config={
+                "renders": True,
+                "num_uavs": 4,
+                "uav_ctrl_type": UavCtrlType.VEL,
+            }
+        )
+        obs, info = env.reset()
+
+        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type, log_freq=env.env_freq)
+
+        for uav in env.uavs.values():
+            plotter.add_uav(uav.id)
+
+        actions = {uav.id: np.zeros(3) for uav in env.uavs.values()}
+        num_timesteps = self.num_med_time * env.env_freq
+        for i in range(num_timesteps):
+            for uav in env.uavs.values():
+                actions[uav.id] = np.zeros(3)
+
+            obs, reward, done, truncated, info = env.step(actions)
+            env.render()
+            # time.sleep(1 / 240)
+
+            for uav in env.uavs.values():
+                plotter.log(uav_id=uav.id, action=actions[uav.id], state=uav.state)
+
+        plotter.plot(plt_action=True)
+
+        env.close()
+
     def test_uav_vel_control(self):
         env = RlMus(
             env_config={

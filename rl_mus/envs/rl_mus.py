@@ -576,17 +576,20 @@ class RlMus(MultiAgentEnv):
             # No need to check for other reward, UAV is done.
             return reward
 
-        # elif uav.rel_target_dist >= np.linalg.norm(
-        #     [self.env_max_l, self.env_max_w, self.env_max_h]
-        # ):
-        #     reward += -10
+        elif uav.rel_target_dist >= np.linalg.norm(
+            [self.env_max_l, self.env_max_w, self.env_max_h]
+        ):
+            reward += -10
         else:
-            # reward += -self._beta * (
-            #     uav.rel_target_dist
-            #     / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
-            # )
-            reward += -self._beta * uav.rel_target_dist
+            reward += -self._beta * (
+                uav.rel_target_dist
+                / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
+            )
+            # reward += -self._beta * uav.rel_target_dist
 
+        if uav.pos[2] <= 0.02:
+            reward += -10
+            uav.done = True
         # give small penalty for having large relative velocity
         reward += -self._beta * uav.rel_target_vel
 

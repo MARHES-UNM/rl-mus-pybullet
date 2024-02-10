@@ -581,13 +581,15 @@ class RlMus(MultiAgentEnv):
             return reward
 
         elif uav.rel_target_dist >= np.linalg.norm(
-            [self.env_max_l, self.env_max_w, self.env_max_h]
+            [2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h]
         ):
             reward += -10
         else:
             reward += -self._beta * (
                 uav.rel_target_dist
-                / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
+                / np.linalg.norm(
+                    [2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h]
+                )
             )
             # reward += -self._beta * uav.rel_target_dist
 

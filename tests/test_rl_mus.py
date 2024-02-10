@@ -141,7 +141,7 @@ class TestRlMus(unittest.TestCase):
 
             for uav in env.uavs.values():
                 actions[uav.id][:3] = obs[uav.id]["target"]
-                actions[uav.id][3] = obs[uav.id]["state"][9] * 0
+                actions[uav.id][3] = obs[uav.id]["state"][9]
 
             obs, reward, done, truncated, info = env.step(actions)
             env.render()

@@ -47,6 +47,7 @@ class TestRlMus(unittest.TestCase):
 
             if i > 1 and last_done_id is not None:
                 self.assertFalse(last_done_id in done.keys())
+                last_done_id = None
 
     # def test_observation_space(self):
     #     env = RlMus({"num_uavs": 1, "num_obstacles": 0})

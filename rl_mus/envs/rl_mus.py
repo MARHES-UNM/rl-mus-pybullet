@@ -770,19 +770,23 @@ class RlMus(MultiAgentEnv):
 
             self.uavs[uav.id] = uav
 
+        target_pos = np.array([[1, 1, 0.5], [1, 0, 0.5], [0, 1, 0.5], [-1, -1, 0.5]])
         # Reset Target
-        for uav in self.uavs.values():
-            # for _ in range(self.num_uavs):
-            in_collision = True
+        for idx, uav in enumerate(self.uavs.values()):
+            # in_collision = True
 
-            while in_collision:
-                pos = self.get_random_pos(low_h=self._z_low, z_high=self._z_high)
+            # while in_collision:
+            #     pos = self.get_random_pos(low_h=self._z_low, z_high=self._z_high)
 
-                in_collision = self.is_in_collision(entity=None, pos=pos, rad=0.1)
+            #     in_collision = self.is_in_collision(entity=None, pos=pos, rad=0.1)
 
+            # target = Target(pos, self._physics_client_id, g=self.g)
+            # # position must be good if here
+            # self.targets[target.id] = target
+            # uav.target_id = target.id
+
+            target = Target(target_pos[idx], self._physics_client_id, g=self.g)
             # position must be good if here
-            target = Target(pos, self._physics_client_id, g=self.g)
-
             self.targets[target.id] = target
             uav.target_id = target.id
 

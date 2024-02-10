@@ -141,6 +141,18 @@ class RlMus(MultiAgentEnv):
                             shape=(3,),
                             dtype=np.float32,
                         ),
+                        "tgt_rel_dist": spaces.Box(
+                            low=-np.inf,
+                            high=np.inf,
+                            shape=(1,),
+                            dtype=np.float32,
+                        ),
+                        "tgt_rel_vel": spaces.Box(
+                            low=-np.inf,
+                            high=np.inf,
+                            shape=(1,),
+                            dtype=np.float32,
+                        ),
                         "constraint": spaces.Box(
                             low=-np.inf,
                             high=np.inf,
@@ -451,7 +463,7 @@ class RlMus(MultiAgentEnv):
 
             self._p.stepSimulation()
             if self._renders and self.render_mode == "human":
-                time.sleep(1 / 240)
+                time.sleep(self._pyb_dt)
             self._time_elapsed += self._pyb_dt
 
         obs, reward, info = {}, {}, {}
@@ -521,6 +533,9 @@ class RlMus(MultiAgentEnv):
                 if uav.id != other_uav.id
             ]
         )
+        target = self.targets[uav.target_id]
+        uav.rel_target_dist = uav.rel_dist(target)
+        uav.rel_target_vel = uav.rel_vel(target)
 
         # TODO: handle obstacles
         # closest_obstacles = self._get_closest_obstacles(uav)
@@ -529,6 +544,8 @@ class RlMus(MultiAgentEnv):
         obs_dict = {
             "state": uav.state.astype(np.float32),
             "target": self.targets[uav.target_id].pos.astype(np.float32),
+            "tgt_rel_dist": np.array([uav.rel_target_dist], dtype=np.float32),
+            "tgt_rel_vel": np.array([uav.rel_target_vel], dtype=np.float32),
             "done_dt": np.array(
                 [self.time_final - self._time_elapsed], dtype=np.float32
             ),

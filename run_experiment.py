@@ -118,6 +118,8 @@ def train(args):
         # See for specific ppo config: https://docs.ray.io/en/latest/rllib/rllib-algorithms.html#ppo
         # See for more on PPO hyperparameters: https://medium.com/aureliantactics/ppo-hyperparameters-and-ranges-6fc2d29bccbe
         .training(
+            # https://docs.ray.io/en/latest/rllib/rllib-models.html
+            model={"fcnet_hiddens": [512, 512, 512]},
             lr=5e-5,
             use_gae=True,
             use_critic=True,
@@ -185,6 +187,11 @@ def test(args):
 
 
 def experiment(args):
+    if args.seed:
+        print(f"******************seed: {args.seed}")
+        seed_val = none_or_int(args.seed)
+        args.config["env_config"]["seed"] = seed_val
+
     args.config["env_config"]["renders"] = args.renders
     args.config["plot_results"] = args.plot_results
     if args.write_exp:
@@ -348,6 +355,12 @@ def experiment(args):
     logger.debug("done")
 
 
+def none_or_int(value):
+    if value == "None":
+        return None
+    return int(value)
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--load_config", default=f"{PATH}/configs/sim_config.cfg")
@@ -377,6 +390,8 @@ def parse_arguments():
     test_sub.add_argument("--write_exp", action="store_true")
     test_sub.add_argument("--plot_results", action="store_true", default=False)
     test_sub.add_argument("--tune_run", action="store_true", default=False)
+    test_sub.add_argument("--seed")
+
     test_sub.set_defaults(func=test)
 
     train_sub = subparsers.add_parser("train")

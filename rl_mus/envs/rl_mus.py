@@ -657,6 +657,9 @@ class RlMus(MultiAgentEnv):
 
         x = np.random.rand() * x_high
         y = np.random.rand() * y_high
+        # TODO: use the full area
+        # x = np.random.uniform(low=-x_high, high=x_high)
+        # y = np.random.uniform(low=-y_high, high=y_high)
         z = np.random.uniform(low=low_h, high=z_high)
         return np.array([x, y, z])
 

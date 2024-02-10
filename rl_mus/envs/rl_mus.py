@@ -1,4 +1,5 @@
 import sys
+import time
 from gymnasium import spaces
 import numpy as np
 import gymnasium as gym
@@ -449,6 +450,8 @@ class RlMus(MultiAgentEnv):
             #     obstacle.step(np.array([self.target.vx, self.target.vy]))
 
             self._p.stepSimulation()
+            if self._renders and self.render_mode == "human":
+                time.sleep(1 / 240)
             self._time_elapsed += self._pyb_dt
 
         obs, reward, info = {}, {}, {}
@@ -594,7 +597,7 @@ class RlMus(MultiAgentEnv):
             uav.crashed = True
 
         # give small penalty for having large relative velocity
-        reward += -self._beta * uav.rel_target_vel
+        # reward += -self._beta * uav.rel_target_vel
 
         # neg reward if uav collides with other uavs
         for other_uav in self.uavs.values():

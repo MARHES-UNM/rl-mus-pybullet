@@ -194,14 +194,7 @@ def experiment(args):
 
     args.config["env_config"]["renders"] = args.renders
     args.config["plot_results"] = args.plot_results
-    if args.write_exp:
-        args.config["write_experiment"] = True
 
-        output_folder = Path(args.log_dir)
-        if not output_folder.exists():
-            output_folder.mkdir(parents=True, exist_ok=True)
-
-        args.config["fname"] = output_folder / "result.json"
     experiment_num = args.experiment_num
     exp_config = args.config
 
@@ -210,8 +203,6 @@ def experiment(args):
 
     max_num_episodes = args.max_num_episodes
 
-    fname = exp_config.setdefault("fname", None)
-    write_experiment = exp_config.setdefault("write_experiment", False)
     env_config = exp_config["env_config"]
     plot_results = exp_config["plot_results"]
     log_config = exp_config["logger_config"]
@@ -329,33 +320,18 @@ def experiment(args):
 
     env.close()
 
-    # TODO: set log time
-    # env_logger.log_total_time()
     # TODO: fix logging the experiment
-    # if write_experiment:
-    #     if fname is None:
-    #         file_prefix = {
-    #             "tgt_v": env_config["target_v"],
-    #             "sa": env_config["use_safe_action"],
-    #             "obs": env_config["num_obstacles"],
-    #             "seed": env_config["seed"],
-    #         }
-    #         file_prefix = "_".join(
-    #             [f"{k}_{str(int(v))}" for k, v in file_prefix.items()]
-    #         )
+    if args.write_exp:
+        output_folder = Path(args.log_dir)
+        if not output_folder.exists():
+            output_folder.mkdir(parents=True, exist_ok=True)
 
-    #         fname = f"exp_{experiment_num}_{file_prefix}_result.json"
-    #     # writing too much data, for now just save the first experiment
-    #     for k, v in results["episode_data"].items():
-    #         results["episode_data"][k] = [
-    #             v[0],
-    #         ]
+        fname = output_folder / "result.json"
 
-    #     results["env_config"] = env.env_config
-    #     results["exp_config"] = exp_config["exp_config"]
-    #     results["time_total_s"] = end_time
-    #     with open(fname, "w") as f:
-    #         json.dump(results, f)
+        results = env_logger.data
+        results["config"] = args.config
+        with open(fname, "w") as f:
+            json.dump(results, f)
 
     logger.debug("done")
 
@@ -382,7 +358,7 @@ def parse_arguments():
         default="torch",
         help="The DL framework specifier.",
     )
-    parser.add_argument("--env_name", type=str, default="multi-uav-sim-v0")
+    parser.add_argument("--env_name", type=str, default="rl-mus-v0")
 
     subparsers = parser.add_subparsers(dest="command")
     test_sub = subparsers.add_parser("test")
@@ -438,13 +414,12 @@ def main():
     with open(args.load_config, "rt") as f:
         args.config = json.load(f)
 
+    args.config["env_name"] = args.env_name
     if not args.config["exp_config"]["run"] == "cc":
-        if args.env_name == "multi-uav-sim-v0":
-            args.config["env_name"] = args.env_name
-            tune.register_env(
-                args.config["env_name"],
-                lambda env_config: RlMus(env_config=env_config),
-            )
+        tune.register_env(
+            args.config["env_name"],
+            lambda env_config: RlMus(env_config=env_config),
+        )
 
     logger.debug(f"config: {args.config}")
 
@@ -452,7 +427,7 @@ def main():
         branch_hash = get_git_hash()
 
         dir_timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        args.log_dir = f"./results/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}/{args.name}"
+        args.log_dir = f"./results/{args.func.__name__}/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}/{args.name}"
 
     args.log_dir = Path(args.log_dir).resolve()
     if not args.log_dir.exists():

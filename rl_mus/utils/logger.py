@@ -74,12 +74,13 @@ class UavLogger(BaseLogger):
         self.fig.suptitle(title)
 
         # convert data to numpy arrays
-        # for uav_id in range(self.num_uavs):
-        for uav_id, idx in self.uav_ids.items():
-            for key in self._data["log"][idx].keys():
-                self._data["log"][idx][key] = np.array(self._data["log"][idx][key])
+        self._data_np = deepcopy(self._data)
 
-        self._num_samples = self._data["log"][0]["state"].shape[0]
+        for uav_id, idx in self.uav_ids.items():
+            for key in self._data_np["log"][idx].keys():
+                self._data_np["log"][idx][key] = np.array(self._data_np["log"][idx][key])
+
+        self._num_samples = self._data_np["log"][0]["state"].shape[0]
         col = 0
         # x, y, z
         row = 0
@@ -185,7 +186,7 @@ class UavLogger(BaseLogger):
     def plot_uav_data(self, row, col, data_idx, data_type="state", ylabel=""):
         t = np.arange(self._num_samples) / self.log_freq
         for uav_id, idx in self.uav_ids.items():
-            data = self._data["log"][idx][data_type][:, data_idx]
+            data = self._data_np["log"][idx][data_type][:, data_idx]
             self.axs[row, col].plot(t, data, label=f"uav_{uav_id}")
         self.axs[row, col].set_xlabel("t (s)")
         self.axs[row, col].set_ylabel(ylabel)
@@ -232,7 +233,7 @@ class EnvLogger(UavLogger):
 
             for k, v in value.items():
                 if k in self._obs_items:
-                    self.data["log"][array_idx][k].append(v)
+                    self.data["log"][array_idx][k].append(v.tolist())
 
             for k, v in info[uav_id].items():
                 if k in self._info_items:
@@ -241,7 +242,7 @@ class EnvLogger(UavLogger):
             if self._log_reward:
                 self.data["log"][array_idx]["reward"].append(reward[uav_id])
 
-            self.data["log"][array_idx]["action"].append(action[uav_id])
+            self.data["log"][array_idx]["action"].append(action[uav_id].tolist())
 
     def log_eps_time(self, sim_time, real_time):
         self._data["eps_tot_sim_time"].append(sim_time)
@@ -272,13 +273,13 @@ class EnvLogger(UavLogger):
         )
         self.fig.suptitle(title)
 
-        # convert data to numpy arrays
-        # for uav_id in range(self.num_uavs):
+        # convert data to numpy arrays        
+        self._data_np = deepcopy(self._data)
         for uav_id, idx in self.uav_ids.items():
-            for key in self._data["log"][idx].keys():
-                self._data["log"][idx][key] = np.array(self._data["log"][idx][key])
+            for key in self._data_np["log"][idx].keys():
+                self._data_np["log"][idx][key] = np.array(self._data_np["log"][idx][key])
 
-        self._num_samples = self._data["log"][0]["state"].shape[0]
+        self._num_samples = self._data_np["log"][0]["state"].shape[0]
         col = 0
         row = 0
         self.plot_info_data(row, data_type="uav_target_reached", ylabel="tgt reached")
@@ -320,7 +321,7 @@ class EnvLogger(UavLogger):
     ):
         t = np.arange(self._num_samples) / self.log_freq
         for uav_id, idx in self.uav_ids.items():
-            data = self._data["log"][idx][data_type]
+            data = self._data_np["log"][idx][data_type]
             self.axs[row].plot(t, data, label=f"uav_{uav_id}")
         self.axs[row].set_xlabel("t (s)")
         self.axs[row].set_ylabel(ylabel)

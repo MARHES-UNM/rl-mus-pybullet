@@ -222,19 +222,20 @@ class TestRlMus(unittest.TestCase):
     def apf_uav_controller(self, agent, target, ka=3):
         agent_pos = agent.pos
         target_pos = target.pos
+        alpha = 0
 
         dist_to_target = agent.rel_dist(target) + 0.001
 
         target_star = 1 * (target.rad + agent.rad)
-        if dist_to_target <= target_star:
-            des_v = -ka * (agent_pos - target_pos)
+        # if dist_to_target <= target_star:
+        #     des_v = -ka * (agent_pos - target_pos)
 
-        else:
-            des_v = (
-                -ka
-                * (1 / dist_to_target**1)
-                * ((agent_pos - target_pos) / dist_to_target)
-            )
+        # else:
+        des_v = (
+            -ka
+            * (1 / dist_to_target**alpha)
+            * ((agent_pos - target_pos) / dist_to_target)
+        )
 
         return des_v
 
@@ -280,7 +281,7 @@ class TestRlMus(unittest.TestCase):
                 )
 
             env.render()
-            time.sleep(1 / env.env_freq)
+            # time.sleep(1 / env.env_freq)
 
             if done["__all__"]:
                 obs, info = env.reset()
@@ -337,7 +338,7 @@ class TestRlMus(unittest.TestCase):
                 )
 
             env.render()
-            time.sleep(1 / env.env_freq)
+            # time.sleep(1 / env.env_freq)
 
             if done["__all__"]:
                 obs, info = env.reset()

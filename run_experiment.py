@@ -92,7 +92,7 @@ def train(args):
 
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
     # args.config["env_config"]["beta"] = tune.grid_search([1.0, 2.0, 10.0, 50.0])
-    args.config["env_config"]["stp_penalty"] = tune.grid_search([5, 100, 20, 50.0])
+    # args.config["env_config"]["stp_penalty"] = tune.grid_search([5, 100, 20, 50.0])
 
     callback_list = [TrainCallback]
     # multi_callbacks = make_multi_callbacks(callback_list)
@@ -119,7 +119,7 @@ def train(args):
         # See for more on PPO hyperparameters: https://medium.com/aureliantactics/ppo-hyperparameters-and-ranges-6fc2d29bccbe
         .training(
             # https://docs.ray.io/en/latest/rllib/rllib-models.html
-            model={"fcnet_hiddens": [512, 512, 512]},
+            # model={"fcnet_hiddens": [512, 512, 512]},
             lr=5e-5,
             use_gae=True,
             use_critic=True,

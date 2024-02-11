@@ -320,7 +320,6 @@ def experiment(args):
 
     env.close()
 
-    # TODO: fix logging the experiment
     if args.write_exp:
         output_folder = Path(args.log_dir)
         if not output_folder.exists():

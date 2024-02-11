@@ -280,6 +280,7 @@ class EnvLogger(UavLogger):
         self.plot_info_data(row, data_type="uav_done_dt", ylabel="done dt")
         row = 2
         self.plot_info_data(row, data_type="reward", ylabel="reward")
+        # TODO: calculate discounted reward
         row = 3
         self.plot_info_data(row, data_type="uav_collision", ylabel="uav_col")
         row = 4

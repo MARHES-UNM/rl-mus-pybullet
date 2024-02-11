@@ -571,11 +571,11 @@ class RlMus(MultiAgentEnv):
             # UAV most have finished last time_step, report zero collisions
             return reward
 
-        # give penalty for reaching the time limit
-        if self.time_elapsed >= self.max_time:
-            reward -= self._stp_penalty
-            uav.done = True
-            return reward
+        # # give penalty for reaching the time limit
+        # if self.time_elapsed >= self.max_time:
+        #     reward -= self._stp_penalty
+        #     uav.done = True
+        #     return reward
 
         uav.done_dt = t_remaining
 
@@ -597,18 +597,23 @@ class RlMus(MultiAgentEnv):
             # No need to check for other reward, UAV is done.
             return reward
 
-        elif uav.rel_target_dist >= np.linalg.norm(
-            [2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h]
-        ):
-            reward += -10
-        else:
-            reward += -self._beta * (
-                uav.rel_target_dist
-                / np.linalg.norm(
-                    [2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h]
-                )
-            )
-            # reward += -self._beta * uav.rel_target_dist
+        # elif uav.rel_target_dist >= np.linalg.norm(
+        #     [2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h]
+        # ):
+        #     reward += -10
+        # else:
+        #     reward += -self._beta * (
+        #         uav.rel_target_dist
+        #         / np.linalg.norm(
+        #             [2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h]
+        #         )
+        #     )
+
+        reward += (
+            -5
+            * uav.rel_target_dist
+            / np.linalg.norm([2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h])
+        )
 
         if uav.pos[2] <= 0.02:
             reward += -100

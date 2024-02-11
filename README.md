@@ -59,3 +59,6 @@ https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/
     [Minimum snap trajectory generation and control for quadrotors](https://ieeexplore.ieee.org/document/5980409)
 
     [Learning Agile Quadrotor Flight in Restricted Environments with Safety Guarantees](https://ieeexplore.ieee.org/document/10403939)
+    [Reinforcement Learning](http://incompleteideas.net/book/RLbook2020.pdf)
+    http://incompleteideas.net/book/the-book-2nd.html
+    https://drive.google.com/drive/folders/1cMJWR90IkMxWngWpjOtD-qdLS_a7KiYL

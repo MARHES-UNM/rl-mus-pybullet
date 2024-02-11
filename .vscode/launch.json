@@ -27,7 +27,7 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "test",
-                "--renders",
+                // "--renders",
                 "--plot_results", 
                 // "--seed", "None"
             ],

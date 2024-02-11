@@ -209,6 +209,8 @@ class EnvLogger(UavLogger):
 
         self._data = {}
         self._data["eps_num"] = []
+        self._data["eps_tot_sim_time"] = []
+        self._data["eps_tot_real_time"] = []
         data_dictionary = {}
 
         for key in self._obs_items:
@@ -240,6 +242,10 @@ class EnvLogger(UavLogger):
                 self.data["log"][array_idx]["reward"].append(reward[uav_id])
 
             self.data["log"][array_idx]["action"].append(action[uav_id])
+
+    def log_eps_time(self, sim_time, real_time):
+        self._data["eps_tot_sim_time"].append(sim_time)
+        self._data["eps_tot_real_time"].append(real_time)
 
     @property
     def num_samples(self):

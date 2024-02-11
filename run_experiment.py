@@ -305,6 +305,9 @@ def experiment(args):
             env.render()
 
         if done["__all__"]:
+
+            end_time = time() - start_time
+            env_logger.log_eps_time(sim_time=env.time_elapsed, real_time=end_time)
             num_episodes += 1
 
             if plot_results:
@@ -312,8 +315,10 @@ def experiment(args):
                 env_logger.plot(plt_action=True, plt_target=True)
 
             if num_episodes == max_num_episodes:
-                end_time = time() - start_time
                 break
+
+            # reset the episode data
+            start_time = time()
 
             (obs, info), done = env.reset(), {
                 agent.id: False for agent in env.uavs.values()

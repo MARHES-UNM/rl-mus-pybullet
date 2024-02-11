@@ -877,7 +877,7 @@ class RlMus(MultiAgentEnv):
 
         return action
 
-    def render(self, mode="human", close=False):
+    def render(self, mode="human"):
         """
         See this example for converting python figs to images:
         https://stackoverflow.com/questions/7821518/save-plot-to-numpy-array

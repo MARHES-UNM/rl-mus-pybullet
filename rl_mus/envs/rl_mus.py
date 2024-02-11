@@ -41,10 +41,10 @@ class RlMus(MultiAgentEnv):
         )
         self.uav_collision_weight = env_config.setdefault("uav_collision_weight", 0.1)
         self._use_safe_action = env_config.setdefault("use_safe_action", False)
-        self.time_final = env_config.setdefault("time_final", 20.0)
+        self.time_final = env_config.setdefault("time_final", 10.0)
         self.t_go_max = env_config.setdefault("t_go_max", 2.0)
         self.t_go_n = env_config.setdefault("t_go_n", 1.0)
-        self._beta = env_config.setdefault("beta", 0.01)
+        self._beta = env_config.setdefault("beta", 1.0)
         self._d_thresh = env_config.setdefault("d_thresh", 0.15)  # uav.rad + target.rad
         self._tgt_reward = env_config.setdefault("tgt_reward", 200.0)
         self._crash_penalty = env_config.setdefault("crash_penalty", 200.0)

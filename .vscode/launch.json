@@ -28,7 +28,7 @@
             "args": [
                 "test",
                 // "--write_exp",
-                // "--renders",
+                "--renders",
                 "--plot_results", 
                 // "--seed", "None"
             ],

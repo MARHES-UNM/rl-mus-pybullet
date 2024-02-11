@@ -426,8 +426,10 @@ def main():
     if not args.log_dir:
         branch_hash = get_git_hash()
 
+        num_uavs = args.config["env_config"]["num_uavs"]
+        num_obs = args.config["env_config"]["max_num_obstacles"]
         dir_timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        args.log_dir = f"./results/{args.func.__name__}/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}/{args.name}"
+        args.log_dir = f"./results/{args.func.__name__}/{args.run}/{args.env_name}_{num_uavs}u_{num_obs}o_{dir_timestamp}_{branch_hash}/{args.name}"
 
     args.log_dir = Path(args.log_dir).resolve()
     if not args.log_dir.exists():

@@ -46,7 +46,8 @@ class RlMus(MultiAgentEnv):
         self.t_go_n = env_config.setdefault("t_go_n", 1.0)
         self._beta = env_config.setdefault("beta", 0.01)
         self._d_thresh = env_config.setdefault("d_thresh", 0.15)  # uav.rad + target.rad
-        self._tgt_reward = env_config.setdefault("tgt_reward", 100.0)
+        self._tgt_reward = env_config.setdefault("tgt_reward", 200.0)
+        self._crash_penalty = env_config.setdefault("crash_penalty", 200.0)
         self._stp_penalty = env_config.setdefault("stp_penalty", 100.0)
         self._dt_reward = env_config.setdefault("dt_reward", 0.0)
         self._dt_weight = env_config.setdefault("dt_weight", 0.0)
@@ -63,13 +64,14 @@ class RlMus(MultiAgentEnv):
         self._z_low = env_config.setdefault("z_low", 0.1)
         self.max_time = self.time_final + (self.t_go_max * 2)
 
-        self.env_config = env_config
-
         self._renders = env_config.setdefault("renders", False)
         self._render_height = env_config.setdefault("render_height", 200)
         self._render_width = env_config.setdefault("render_width", 320)
         self._pyb_freq = env_config.setdefault("pybullet_freq", 240)
         self._sim_dt = env_config.setdefault("sim_dt", 0.1)
+
+        self.env_config = env_config
+
         self._sim_steps = int(self._pyb_freq * self._sim_dt)
         # this is the timestep, default to 1 / 240
         self._pyb_dt = 1 / self._pyb_freq
@@ -610,13 +612,13 @@ class RlMus(MultiAgentEnv):
         #     )
 
         reward += (
-            -5
+            -self._beta
             * uav.rel_target_dist
             / np.linalg.norm([2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h])
         )
 
         if uav.pos[2] <= 0.02:
-            reward += -100
+            reward += -self._crash_penalty
             uav.done = True
             uav.crashed = True
 

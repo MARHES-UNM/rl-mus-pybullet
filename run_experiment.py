@@ -328,7 +328,8 @@ def experiment(args):
         fname = output_folder / "result.json"
 
         results = env_logger.data
-        results["config"] = args.config
+        results["env_config"] = env.env_config
+        results["exp_config"] = args.config["exp_config"]
         with open(fname, "w") as f:
             json.dump(results, f)
 

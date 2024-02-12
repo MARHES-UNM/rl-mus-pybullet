@@ -80,10 +80,11 @@ class Entity:
         self.ang_v = np.array(self.ang_v)
 
         self._state = np.hstack(
-                [self.pos, self.quat, self.rpy, self.vel, self.ang_v]
-            ).reshape(
-                -1,
-            )
+            [self.pos, self.quat, self.rpy, self.vel, self.ang_v]
+        ).reshape(
+            -1,
+        )
+
     def draw_local_axis(self):
         axis_length = 2 * self.rad
         self.x_axis = p.addUserDebugLine(
@@ -114,8 +115,6 @@ class Entity:
             physicsClientId=self.client,
         )
 
-
-
     def step(self):
         raise NotImplemented()
 
@@ -134,12 +133,18 @@ class Entity:
         else:
             dist = np.linalg.norm(self.pos - pos)
             return dist <= (self.rad + rad)
-        
+
     def rel_dist(self, entity):
         return np.linalg.norm(self.pos - entity.pos)
 
     def rel_vel(self, entity):
         return np.linalg.norm(self.vel - entity.vel)
+
+    def los_angle(self, entity):
+        return np.arccos(
+            np.dot(self.vel, (self.pos - entity.pos))
+            / (np.linalg.norm(self.vel) * self.rel_dist(entity))
+        )
 
     @property
     def state(self):
@@ -199,7 +204,6 @@ class Uav(Entity):
         urdf = os.path.join(ASSET_PATH, urdf)
         self.arm = 0.0397
 
-
         super().__init__(
             init_xyz,
             init_rpy,
@@ -257,13 +261,12 @@ class Uav(Entity):
             self.action_low = np.ones(self.num_actions) * self.min_pwm
         elif self.ctrl_type == UavCtrlType.POS:
             self.num_actions = 4
-            self.action_high = np.ones(self.num_actions)*np.inf
-            self.action_low = -np.ones(self.num_actions)*np.inf
+            self.action_high = np.ones(self.num_actions) * np.inf
+            self.action_low = -np.ones(self.num_actions) * np.inf
         elif self.ctrl_type == UavCtrlType.VEL:
             self.num_actions = 3
             self.action_high = np.ones(self.num_actions) * self.vel_lim
             self.action_low = -np.ones(self.num_actions) * self.vel_lim
-
 
     def compute_control(
         self, pos_des, rpy_des, vel_des=np.zeros(3), ang_vel_des=np.zeros(3)

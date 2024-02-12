@@ -131,7 +131,9 @@ class TestRlMus(unittest.TestCase):
         )
         obs, info = env.reset()
 
-        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type, log_freq=env.env_freq)
+        plotter = UavLogger(
+            num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type, log_freq=env.env_freq
+        )
 
         for uav in env.uavs.values():
             plotter.add_uav(uav.id)
@@ -164,7 +166,9 @@ class TestRlMus(unittest.TestCase):
         )
         obs, info = env.reset()
 
-        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type, log_freq=env.env_freq)
+        plotter = UavLogger(
+            num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type, log_freq=env.env_freq
+        )
 
         for uav in env.uavs.values():
             plotter.add_uav(uav.id)
@@ -196,7 +200,9 @@ class TestRlMus(unittest.TestCase):
         )
         obs, info = env.reset()
 
-        plotter = UavLogger(num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type, log_freq=env.env_freq)
+        plotter = UavLogger(
+            num_uavs=env.num_uavs, ctrl_type=env.uav_ctrl_type, log_freq=env.env_freq
+        )
 
         for uav in env.uavs.values():
             plotter.add_uav(uav.id)
@@ -219,7 +225,7 @@ class TestRlMus(unittest.TestCase):
 
         env.close()
 
-    def apf_uav_controller(self, agent, target, ka=3):
+    def apf_uav_controller(self, agent, target, ka=1):
         agent_pos = agent.pos
         target_pos = target.pos
         alpha = 0
@@ -227,15 +233,16 @@ class TestRlMus(unittest.TestCase):
         dist_to_target = agent.rel_dist(target) + 0.001
 
         target_star = 1 * (target.rad + agent.rad)
-        # if dist_to_target <= target_star:
-        #     des_v = -ka * (agent_pos - target_pos)
+        if dist_to_target <= target_star:
+            #     des_v = -ka * (agent_pos - target_pos)
+            des_v = np.zeros(3)
 
-        # else:
-        des_v = (
-            -ka
-            * (1 / dist_to_target**alpha)
-            * ((agent_pos - target_pos) / dist_to_target)
-        )
+        else:
+            des_v = (
+                -ka
+                * (1 / dist_to_target**alpha)
+                * ((agent_pos - target_pos) / dist_to_target)
+            )
 
         return des_v
 
@@ -298,7 +305,14 @@ class TestRlMus(unittest.TestCase):
 
     def test_uav_apf_vel_control(self):
 
-        env = RlMus(env_config={"num_uavs": 4, "renders": True, "pybullet_freq": 240})
+        env = RlMus(
+            env_config={
+                "num_uavs": 4,
+                "renders": True,
+                "pybullet_freq": 240,
+                # "sim_dt": 1 / 240,
+            }
+        )
         log_config = {
             "obs_items": ["state", "target"],
             "info_items": [

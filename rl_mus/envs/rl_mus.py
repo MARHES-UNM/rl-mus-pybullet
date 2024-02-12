@@ -599,10 +599,13 @@ class RlMus(MultiAgentEnv):
             # No need to check for other reward, UAV is done.
             return reward
 
-        # elif uav.rel_target_dist >= np.linalg.norm(
-        #     [2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h]
-        # ):
-        #     reward += -10
+        if uav.pos[2] <= 0.02:
+            reward += -self._crash_penalty
+            uav.done = True
+            uav.crashed = True
+
+            return reward
+
         # else:
         #     reward += -self._beta * (
         #         uav.rel_target_dist
@@ -611,16 +614,18 @@ class RlMus(MultiAgentEnv):
         #         )
         #     )
 
+        if uav.rel_target_dist >= np.linalg.norm(
+            [self.env_max_l, self.env_max_w, self.env_max_h]
+        ):
+            reward += -10
+
         reward += (
             -self._beta
             * uav.rel_target_dist
-            / np.linalg.norm([2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h])
+            / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
         )
 
-        if uav.pos[2] <= 0.02:
-            reward += -self._crash_penalty
-            uav.done = True
-            uav.crashed = True
+        reward += -3 * uav.los_angle(target) / np.pi
 
         # give small penalty for having large relative velocity
         # reward += -self._beta * uav.rel_target_vel
@@ -780,7 +785,9 @@ class RlMus(MultiAgentEnv):
 
             self.uavs[uav.id] = uav
 
-        target_pos = np.array([[2, 2, 0.5], [1.5, 2, 0.5], [2, 1.5, 0.5], [1.5, 1.5, 0.5]])
+        target_pos = np.array(
+            [[2, 2, 0.5], [1.5, 2, 0.5], [2, 1.5, 0.5], [1.5, 1.5, 0.5]]
+        )
         # Reset Target
         for idx, uav in enumerate(self.uavs.values()):
             # in_collision = True

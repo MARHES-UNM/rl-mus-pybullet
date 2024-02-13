@@ -91,8 +91,10 @@ def train(args):
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["beta"] = tune.grid_search([1, 5])
-    args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
+    args.config["env_config"]["sim_dt"] = tune.grid_search([1/50, 1/10])
+    args.config["env_config"]["pybullet_freq"] = tune.grid_search([50, 240])
+    # args.config["env_config"]["beta"] = tune.grid_search([1, 5])
+    # args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
 
     callback_list = [TrainCallback]
     # multi_callbacks = make_multi_callbacks(callback_list)

@@ -67,14 +67,15 @@ class RlMus(MultiAgentEnv):
         self._renders = env_config.setdefault("renders", False)
         self._render_height = env_config.setdefault("render_height", 200)
         self._render_width = env_config.setdefault("render_width", 320)
+        # this is the timestep, default to 1 / 240
         self._pyb_freq = env_config.setdefault("pybullet_freq", 50)
-        self._sim_dt = env_config.setdefault("sim_dt", 0.1)
-        # self._sim_dt = 1 / self._pyb_freq 
+        self._sim_dt = env_config.setdefault("sim_dt", 1 / 50)
 
+        # save the configuration
         self.env_config = env_config
 
+        self._env_freq = int(1 / self._sim_dt)
         self._sim_steps = int(self._pyb_freq * self._sim_dt)
-        # this is the timestep, default to 1 / 240
         self._pyb_dt = 1 / self._pyb_freq
 
         self._physics_client_id = None
@@ -95,7 +96,7 @@ class RlMus(MultiAgentEnv):
 
     @property
     def env_freq(self):
-        return int(1 / self._sim_dt)
+        return self._env_freq
 
     @property
     def pybullet_freq(self):
@@ -778,6 +779,8 @@ class RlMus(MultiAgentEnv):
                 g=self.g,
                 ctrl_type=self.uav_ctrl_type,
                 pyb_freq=self._pyb_freq,
+                ctrl_freq=1 / (self._pyb_dt * self._sim_steps),
+                # ctrl_freq=self._pyb_freq
             )
             if self.first_uav_id is None:
                 self.first_uav_id = uav.id

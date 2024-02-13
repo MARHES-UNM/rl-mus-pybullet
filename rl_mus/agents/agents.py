@@ -241,8 +241,9 @@ class Uav(Entity):
         self.kp_tor = np.array([70000.0, 70000.0, 60000.0])
         self.ki_tor = np.array([0.0, 0.0, 500.0])
         self.kd_tor = np.array([20000.0, 20000.0, 12000.0])
+        # TODO: delete
         self.pyb_freq = pyb_freq
-        self.ctrl_freq = pyb_freq
+        self.ctrl_freq = ctrl_freq
         self.ctrl_timestep = 1.0 / self.ctrl_freq
         self.rpms = np.zeros(4)
         self.last_rpy = np.zeros(3)

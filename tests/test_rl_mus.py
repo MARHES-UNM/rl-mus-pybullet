@@ -194,7 +194,7 @@ class TestRlMus(unittest.TestCase):
         env = RlMus(
             env_config={
                 "renders": True,
-                "num_uavs": 4,
+                "num_uavs": 1,
                 "uav_ctrl_type": UavCtrlType.VEL,
             }
         )
@@ -211,7 +211,7 @@ class TestRlMus(unittest.TestCase):
         num_timesteps = self.num_med_time * env.env_freq
         for i in range(num_timesteps):
             for uav in env.uavs.values():
-                if i % (240) == 0:
+                if i % (env.env_freq) == 0:
                     actions = env.action_space.sample()
 
             obs, reward, done, truncated, info = env.step(actions)
@@ -248,7 +248,12 @@ class TestRlMus(unittest.TestCase):
 
     def test_uav_apf_vel_control_single(self):
 
-        env = RlMus(env_config={"num_uavs": 1, "renders": True, "pybullet_freq": 240})
+        env = RlMus(
+            env_config={
+                "num_uavs": 1,
+                "renders": True,
+            }
+        )
         log_config = {
             "obs_items": ["state", "target"],
             "info_items": [
@@ -278,7 +283,7 @@ class TestRlMus(unittest.TestCase):
             actions = {uav.id: np.zeros(3) for uav in env.uavs.values()}
             for uav in env.uavs.values():
                 des_v = self.apf_uav_controller(uav, env.targets[uav.target_id])
-                actions[uav.id] = des_v
+                actions[uav.id] = des_v * uav.vel_lim
 
             obs, reward, done, truncated, info = env.step(actions)
 
@@ -309,8 +314,6 @@ class TestRlMus(unittest.TestCase):
             env_config={
                 "num_uavs": 4,
                 "renders": True,
-                "pybullet_freq": 240,
-                # "sim_dt": 1 / 240,
             }
         )
         log_config = {

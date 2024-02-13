@@ -59,6 +59,9 @@ def get_algo_config(config):
 
     env_obs_space, env_action_space = get_obs_act_space(env_config)
 
+    config["env_config"]["sim_dt"] = tune.grid_search([1/50, 1/10])
+    config["env_config"]["pybullet_freq"] = tune.grid_search([50, 240])
+
     algo_config = (
         get_trainable_cls(config["exp_config"]["run"])
         .get_default_config()
@@ -91,9 +94,7 @@ def train(args):
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["sim_dt"] = tune.grid_search([1/50, 1/10])
-    args.config["env_config"]["pybullet_freq"] = tune.grid_search([50, 240])
-    # args.config["env_config"]["beta"] = tune.grid_search([1, 5])
+   # args.config["env_config"]["beta"] = tune.grid_search([1, 5])
     # args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
 
     callback_list = [TrainCallback]
@@ -155,6 +156,7 @@ def train(args):
         "timesteps_total": args.stop_timesteps,
     }
 
+ 
     # # # trainable_with_resources = tune.with_resources(args.run, {"cpu": 18, "gpu": 1.0})
     # # # If you have 4 CPUs and 1 GPU on your machine, this will run 1 trial at a time.
     # # trainable_with_cpu_gpu = tune.with_resources(algo, {"cpu": 2, "gpu": 1})

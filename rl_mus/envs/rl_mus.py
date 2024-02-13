@@ -67,8 +67,9 @@ class RlMus(MultiAgentEnv):
         self._renders = env_config.setdefault("renders", False)
         self._render_height = env_config.setdefault("render_height", 200)
         self._render_width = env_config.setdefault("render_width", 320)
-        self._pyb_freq = env_config.setdefault("pybullet_freq", 240)
+        self._pyb_freq = env_config.setdefault("pybullet_freq", 50)
         self._sim_dt = env_config.setdefault("sim_dt", 0.1)
+        # self._sim_dt = 1 / self._pyb_freq 
 
         self.env_config = env_config
 
@@ -625,7 +626,7 @@ class RlMus(MultiAgentEnv):
             / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
         )
 
-        reward += -3 * uav.los_angle(target) / np.pi
+        # reward += -3 * uav.los_angle(target) / np.pi
 
         # give small penalty for having large relative velocity
         # reward += -self._beta * uav.rel_target_vel

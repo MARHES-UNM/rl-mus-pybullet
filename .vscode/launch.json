@@ -30,7 +30,7 @@
                 // "--write_exp",
                 "--renders",
                 "--plot_results", 
-                // "--seed", "None"
+                "--seed", "None"
             ],
             // "env": {"DISPLAY": "192.168.1.17:0.0"
         },

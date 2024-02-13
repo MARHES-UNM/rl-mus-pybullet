@@ -404,7 +404,8 @@ class Uav(Entity):
             rpms = self.compute_control(
                 pos_des=self.pos,
                 rpy_des=np.array([0, 0, self.rpy[2]]),
-                vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
+                # vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
+                vel_des=self.vel_lim * vel_unit_vector,
             )
         elif self.ctrl_type == UavCtrlType.POS:
             rpms = self.compute_control(

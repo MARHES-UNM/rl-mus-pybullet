@@ -779,8 +779,8 @@ class RlMus(MultiAgentEnv):
                 g=self.g,
                 ctrl_type=self.uav_ctrl_type,
                 pyb_freq=self._pyb_freq,
-                ctrl_freq=1 / (self._pyb_dt * self._sim_steps),
-                # ctrl_freq=self._pyb_freq
+                # ctrl_freq=1 / (self._pyb_dt * self._sim_steps),
+                ctrl_freq=self._pyb_freq
             )
             if self.first_uav_id is None:
                 self.first_uav_id = uav.id

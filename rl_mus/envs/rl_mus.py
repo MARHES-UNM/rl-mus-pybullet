@@ -68,8 +68,8 @@ class RlMus(MultiAgentEnv):
         self._render_height = env_config.setdefault("render_height", 200)
         self._render_width = env_config.setdefault("render_width", 320)
         # this is the timestep, default to 1 / 240
-        self._pyb_freq = env_config.setdefault("pybullet_freq", 50)
-        self._sim_dt = env_config.setdefault("sim_dt", 1 / 50)
+        self._pyb_freq = env_config.setdefault("pybullet_freq", 240)
+        self._sim_dt = env_config.setdefault("sim_dt", 1 / 48)
 
         # save the configuration
         self.env_config = env_config

@@ -59,8 +59,8 @@ def get_algo_config(config):
 
     env_obs_space, env_action_space = get_obs_act_space(env_config)
 
-    config["env_config"]["sim_dt"] = tune.grid_search([1/50, 1/10])
-    config["env_config"]["pybullet_freq"] = tune.grid_search([50, 240])
+    # config["env_config"]["sim_dt"] = tune.grid_search([1/50, 1/10])
+    # config["env_config"]["pybullet_freq"] = tune.grid_search([50, 240])
 
     algo_config = (
         get_trainable_cls(config["exp_config"]["run"])
@@ -94,7 +94,7 @@ def train(args):
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-   # args.config["env_config"]["beta"] = tune.grid_search([1, 5])
+    args.config["env_config"]["beta"] = tune.grid_search([5, 10])
     # args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
 
     callback_list = [TrainCallback]
@@ -291,8 +291,9 @@ def experiment(args):
                     print("unknow safe action type")
 
         obs, rew, done, truncated, info = env.step(actions)
-        if time_step % (env.env_freq / env_logger.log_freq) == 0:
-            env_logger.log(
+        # if time_step % (env.env_freq / env_logger.log_freq) == 0:
+        env_logger.log(
+                # eps_ts=env.time_elapsed, eps_num=num_episodes, info=info, obs=obs, reward=rew, action=actions
                 eps_num=num_episodes, info=info, obs=obs, reward=rew, action=actions
             )
 
@@ -433,7 +434,7 @@ def main():
         num_uavs = args.config["env_config"]["num_uavs"]
         num_obs = args.config["env_config"]["max_num_obstacles"]
         dir_timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        args.log_dir = f"./results/{args.func.__name__}/{args.run}/{args.env_name}_{num_uavs}u_{num_obs}o_{dir_timestamp}_{branch_hash}/{args.name}"
+        args.log_dir = f"./results/{args.func.__name__}/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}_{num_uavs}u_{num_obs}o/{args.name}"
 
     args.log_dir = Path(args.log_dir).resolve()
     if not args.log_dir.exists():

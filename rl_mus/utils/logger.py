@@ -209,6 +209,7 @@ class EnvLogger(UavLogger):
         self._info_items = self._log_config.setdefault("info_items", [])
 
         self._data = {}
+        self._data["eps_time_step"] = []
         self._data["eps_num"] = []
         self._data["eps_tot_sim_time"] = []
         self._data["eps_tot_real_time"] = []
@@ -224,8 +225,13 @@ class EnvLogger(UavLogger):
 
         self._data["log"] = [deepcopy(data_dictionary) for i in range(self.num_uavs)]
 
+    # def log(self, eps_ts, eps_num, info, obs, reward, action):
     def log(self, eps_num, info, obs, reward, action):
 
+        # if not ((eps_ts * self._log_config["env_freq"]) % (self._log_config["env_freq"]/ self.log_freq)) == 0:
+        #     return
+
+        # self._data["eps_time_step"].append(eps_ts)
         self._data["eps_num"].append(eps_num)
 
         for uav_id, value in obs.items():

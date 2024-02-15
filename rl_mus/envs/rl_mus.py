@@ -440,30 +440,44 @@ class RlMus(MultiAgentEnv):
         # step uavs
         self.alive_agents = set()
 
+        rpms = {}
+        for uav_id, action in actions.items():
+
+            # # Done uavs don't move
+            # if self.uavs[uav_id].done:
+            #     continue
+
+            self.alive_agents.add(uav_id)
+
+            if self._use_safe_action:
+                action = self.get_safe_action(self.uavs[uav_id], action)
+
+            # TODO: this may not be needed
+            action = np.clip(action, self.action_low, self.action_high)
+
+            if np.linalg.norm(action) != 0:
+                vel_unit_vector = action / np.linalg.norm(action)
+            else:
+                vel_unit_vector = np.zeros(3)
+
+            rpms[uav_id] = self.uavs[uav_id].compute_control(
+                pos_des=self.uavs[uav_id].pos,
+                rpy_des=np.array([0, 0, self.uavs[uav_id].rpy[2]]),
+                # vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
+                vel_des=self.uavs[uav_id].vel_lim * vel_unit_vector,
+            )
+
         # artificial step
         for num_step in range(self._sim_steps):
-            for uav_id, action in actions.items():
-
-                # # Done uavs don't move
-                # if self.uavs[uav_id].done:
-                #     continue
-
-                self.alive_agents.add(uav_id)
-
-                if self._use_safe_action:
-                    action = self.get_safe_action(self.uavs[uav_id], action)
-
-                # TODO: this may not be needed
-                action = np.clip(action, self.action_low, self.action_high)
-                self.uavs[uav_id].step(action)
+            for uav_id, rpm in rpms.items():
+                self.uavs[uav_id].step(rpm)
+            # # step obstacles
+            # for obstacle in self.obstacles:
+            #     obstacle.step(np.array([self.target.vx, self.target.vy]))
 
             # step target
             for target in self.targets.values():
                 target.step()
-
-            # # step obstacles
-            # for obstacle in self.obstacles:
-            #     obstacle.step(np.array([self.target.vx, self.target.vy]))
 
             self._p.stepSimulation()
             if self._renders and self.render_mode == "human":
@@ -780,7 +794,8 @@ class RlMus(MultiAgentEnv):
                 ctrl_type=self.uav_ctrl_type,
                 pyb_freq=self._pyb_freq,
                 # ctrl_freq=1 / (self._pyb_dt * self._sim_steps),
-                ctrl_freq=self._pyb_freq
+                ctrl_freq=self._env_freq,
+                # ctrl_freq=self._pyb_freq,
             )
             if self.first_uav_id is None:
                 self.first_uav_id = uav.id

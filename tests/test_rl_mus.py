@@ -316,6 +316,8 @@ class TestRlMus(unittest.TestCase):
             env_config={
                 "num_uavs": 4,
                 "renders": True,
+                "pybullet_freq": 240,
+                "sim_dt": 1/48
             }
         )
         log_config = {

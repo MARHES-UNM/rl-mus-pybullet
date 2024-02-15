@@ -78,7 +78,9 @@ class UavLogger(BaseLogger):
 
         for uav_id, idx in self.uav_ids.items():
             for key in self._data_np["log"][idx].keys():
-                self._data_np["log"][idx][key] = np.array(self._data_np["log"][idx][key])
+                self._data_np["log"][idx][key] = np.array(
+                    self._data_np["log"][idx][key]
+                )
 
         self._num_samples = self._data_np["log"][0]["state"].shape[0]
         col = 0
@@ -198,6 +200,8 @@ class EnvLogger(UavLogger):
         self._log_config = log_config
         log_freq = self._log_config.setdefault("log_freq", 10)
         uav_ctrl_type = self._log_config.setdefault("uav_ctrl_type", UavCtrlType.VEL)
+        self._env_freq = self._log_config["env_freq"]
+        self._log_step = -1
 
         super().__init__(num_uavs=num_uavs, log_freq=log_freq, ctrl_type=uav_ctrl_type)
 
@@ -225,13 +229,12 @@ class EnvLogger(UavLogger):
 
         self._data["log"] = [deepcopy(data_dictionary) for i in range(self.num_uavs)]
 
-    # def log(self, eps_ts, eps_num, info, obs, reward, action):
     def log(self, eps_num, info, obs, reward, action):
 
-        # if not ((eps_ts * self._log_config["env_freq"]) % (self._log_config["env_freq"]/ self.log_freq)) == 0:
-        #     return
-
-        # self._data["eps_time_step"].append(eps_ts)
+        self._log_step += 1
+        if not (self._log_step % int(self._env_freq / self.log_freq)) == 0:
+            return
+        self._data["eps_time_step"].append(self._log_step / self.log_freq)
         self._data["eps_num"].append(eps_num)
 
         for uav_id, value in obs.items():
@@ -279,11 +282,13 @@ class EnvLogger(UavLogger):
         )
         self.fig.suptitle(title)
 
-        # convert data to numpy arrays        
+        # convert data to numpy arrays
         self._data_np = deepcopy(self._data)
         for uav_id, idx in self.uav_ids.items():
             for key in self._data_np["log"][idx].keys():
-                self._data_np["log"][idx][key] = np.array(self._data_np["log"][idx][key])
+                self._data_np["log"][idx][key] = np.array(
+                    self._data_np["log"][idx][key]
+                )
 
         self._num_samples = self._data_np["log"][0]["state"].shape[0]
         col = 0

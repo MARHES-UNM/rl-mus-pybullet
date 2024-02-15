@@ -156,7 +156,6 @@ def train(args):
         "timesteps_total": args.stop_timesteps,
     }
 
- 
     # # # trainable_with_resources = tune.with_resources(args.run, {"cpu": 18, "gpu": 1.0})
     # # # If you have 4 CPUs and 1 GPU on your machine, this will run 1 trial at a time.
     # # trainable_with_cpu_gpu = tune.with_resources(algo, {"cpu": 2, "gpu": 1})
@@ -293,9 +292,8 @@ def experiment(args):
         obs, rew, done, truncated, info = env.step(actions)
         # if time_step % (env.env_freq / env_logger.log_freq) == 0:
         env_logger.log(
-                # eps_ts=env.time_elapsed, eps_num=num_episodes, info=info, obs=obs, reward=rew, action=actions
-                eps_num=num_episodes, info=info, obs=obs, reward=rew, action=actions
-            )
+            eps_num=num_episodes, info=info, obs=obs, reward=rew, action=actions
+        )
 
         if renders:
             env.render()

@@ -69,18 +69,19 @@ class RlMus(MultiAgentEnv):
         self._render_width = env_config.setdefault("render_width", 320)
         # this is the timestep, default to 1 / 240
         self._pyb_freq = env_config.setdefault("pybullet_freq", 240)
-        self._sim_dt = env_config.setdefault("sim_dt", 1 / 48)
+        self._env_freq = env_config.setdefault("env_freq", 48)
+        self._sim_dt = 1 / self._env_freq
 
         # save the configuration
         self.env_config = env_config
 
-        self._env_freq = int(1 / self._sim_dt)
         self._sim_steps = int(self._pyb_freq * self._sim_dt)
         self._pyb_dt = 1 / self._pyb_freq
 
         self._physics_client_id = None
 
         self._time_elapsed = 0.0
+        self._sim_step = 0
         self.seed(self._seed)
         self.reset()
         self.action_space = self._get_action_space()
@@ -89,6 +90,10 @@ class RlMus(MultiAgentEnv):
     @property
     def time_elapsed(self):
         return self._time_elapsed
+
+    @property
+    def sim_step(self):
+        return self._sim_step
 
     @property
     def sim_dt(self):
@@ -483,6 +488,7 @@ class RlMus(MultiAgentEnv):
             if self._renders and self.render_mode == "human":
                 time.sleep(self._pyb_dt)
             self._time_elapsed += self._pyb_dt
+            self._sim_step += 1
 
         obs, reward, info = {}, {}, {}
 
@@ -765,6 +771,7 @@ class RlMus(MultiAgentEnv):
         p = self._p
 
         self._time_elapsed = 0.0
+        self._sim_step = 0
         self._agent_ids = set()
 
         # we need the first uav id for some housekeeping

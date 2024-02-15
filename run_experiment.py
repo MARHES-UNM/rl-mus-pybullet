@@ -94,7 +94,7 @@ def train(args):
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["beta"] = tune.grid_search([5, 10])
+    args.config["env_config"]["beta"] = tune.grid_search([.5, 1, 5, 20])
     # args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
 
     callback_list = [TrainCallback]
@@ -169,10 +169,10 @@ def train(args):
             local_dir=args.log_dir,
             name=args.name,
             checkpoint_config=air.CheckpointConfig(
-                # num_to_keep=150,
+                num_to_keep=100,
                 # checkpoint_score_attribute="",
                 checkpoint_at_end=True,
-                checkpoint_frequency=5,
+                checkpoint_frequency=25,
             ),
         ),
     )

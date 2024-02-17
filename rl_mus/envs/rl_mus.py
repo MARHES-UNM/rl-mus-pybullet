@@ -639,12 +639,13 @@ class RlMus(MultiAgentEnv):
         ):
             uav.truncated = True
             return reward
-        # if uav.pos[2] <= 0.02:
-        #     reward += -self._crash_penalty
-        #     uav.done = True
-        #     uav.crashed = True
 
-        #     return reward
+        if uav.pos[2] <= 0.02:
+            # reward += -self._crash_penalty
+            uav.truncated = True
+            uav.crashed = True
+
+            return reward
 
         # else:
         #     reward += -self._beta * (

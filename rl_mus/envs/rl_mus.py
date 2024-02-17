@@ -621,6 +621,9 @@ class RlMus(MultiAgentEnv):
             # No need to check for other reward, UAV is done.
             return reward
 
+        if (abs(uav.pos[0]) > 1.5 or abs(uav.pos[1]) > 1.5 or abs(uav.pos[2]) > 2.0
+            or abs(uav.rpy[0]) > .4 or abs(uav.rpy[1]) > .4):
+            uav.done = True
         # if uav.pos[2] <= 0.02:
         #     reward += -self._crash_penalty
         #     uav.done = True
@@ -647,7 +650,8 @@ class RlMus(MultiAgentEnv):
         #     / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
         # )
 
-        reward += -uav.rel_target_dist
+        # reward += -uav.rel_target_dist
+        reward += max(0, 2 - uav.rel_target_dist**4)
 
         # reward += -3 * uav.los_angle(target) / np.pi
 

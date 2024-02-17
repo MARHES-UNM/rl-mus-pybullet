@@ -94,7 +94,7 @@ def train(args):
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["beta"] = tune.grid_search([.5, 1, 5, 20])
+    # args.config["env_config"]["beta"] = tune.grid_search([.5, 1, 5, 20])
     # args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
 
     callback_list = [TrainCallback]
@@ -127,10 +127,10 @@ def train(args):
             use_gae=True,
             use_critic=True,
             lambda_=0.95,
-            train_batch_size=65536*5,
+            train_batch_size=65536,
             gamma=0.99,
             num_sgd_iter=32,
-            sgd_minibatch_size=4096*5,
+            sgd_minibatch_size=4096,
             vf_clip_param=10.0,
             vf_loss_coeff=0.5,
             clip_param=0.2,

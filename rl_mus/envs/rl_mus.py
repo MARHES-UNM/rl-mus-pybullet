@@ -107,6 +107,10 @@ class RlMus(MultiAgentEnv):
     def pybullet_freq(self):
         return self._pyb_freq
 
+    @property
+    def agent_ids(self):
+        return self._agent_ids
+
     def _get_action_space(self):
         """The action of the UAV. We don't normalize the action space in this environment.
         It is recommended to normalize using a wrapper function.
@@ -441,6 +445,7 @@ class RlMus(MultiAgentEnv):
         return u_out
 
     def step(self, actions):
+        # print(f"time: {self.time_elapsed}: {actions}")
 
         # step uavs
         self.alive_agents = set()
@@ -460,8 +465,8 @@ class RlMus(MultiAgentEnv):
             # TODO: this may not be needed
             action = np.clip(action, self.action_low, self.action_high)
 
-            if np.linalg.norm(action) != 0:
-                vel_unit_vector = action / np.linalg.norm(action)
+            if np.linalg.norm(action[0:3]) != 0:
+                vel_unit_vector = action[0:3] / np.linalg.norm(action[0:3])
             else:
                 vel_unit_vector = np.zeros(3)
 
@@ -469,7 +474,8 @@ class RlMus(MultiAgentEnv):
                 pos_des=self.uavs[uav_id].pos,
                 rpy_des=np.array([0, 0, self.uavs[uav_id].rpy[2]]),
                 # vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
-                vel_des=self.uavs[uav_id].vel_lim * vel_unit_vector,
+                vel_des=self.uavs[uav_id].vel_lim * np.abs(action[3]) * vel_unit_vector # target the desired velocity vector
+                # vel_des=self.uavs[uav_id].vel_lim * vel_unit_vector,
             )
 
         # artificial step
@@ -514,14 +520,16 @@ class RlMus(MultiAgentEnv):
             self.uavs[uav_id].id: self.uavs[uav_id].terminated
             for uav_id in self.alive_agents
         }
-        terminated["__all__"] = all(v for v in terminated.values())
+        terminated = all(v for v in terminated.values())
+        # terminated["__all__"] = all(v for v in terminated.values())
         truncated = {
             self.uavs[uav_id].id: self.uavs[uav_id].truncated
             for uav_id in self.alive_agents
         }
-        truncated["__all__"] = (
-            all(v for v in truncated.values()) or self._time_elapsed >= self.max_time
-        )
+        truncated = all(v for v in truncated.values()) or self._time_elapsed >= self.max_time
+        # truncated["__all__"] = (
+            # all(v for v in truncated.values()) or self._time_elapsed >= self.max_time
+        # )
         # truncated["__all__"] = all(v for v in truncated.values())
 
         # newwer api gymnasium > 0.28
@@ -529,6 +537,7 @@ class RlMus(MultiAgentEnv):
 
         # old api gym < 0.26.1
         # return obs, reward, done, info
+        # print(f"terminated: {terminated}\ntruncated: {truncated}")
         return obs, reward, terminated, truncated, info
 
     def _get_info(self, uav):
@@ -640,12 +649,12 @@ class RlMus(MultiAgentEnv):
             uav.truncated = True
             return reward
 
-        if uav.pos[2] <= 0.02:
-            # reward += -self._crash_penalty
-            uav.truncated = True
-            uav.crashed = True
+        # if uav.pos[2] <= 0.02:
+        #     # reward += -self._crash_penalty
+        #     uav.truncated = True
+        #     uav.crashed = True
 
-            return reward
+        #     return reward
 
         # else:
         #     reward += -self._beta * (

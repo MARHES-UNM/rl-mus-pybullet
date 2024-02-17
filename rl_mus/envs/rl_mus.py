@@ -510,18 +510,26 @@ class RlMus(MultiAgentEnv):
         real_done["__all__"] = (
             all(v for v in real_done.values()) or self._time_elapsed >= self.max_time
         )
-        truncated = {
-            self.uavs[id].id: self._time_elapsed >= self.max_time
-            for id in self.alive_agents
+        terminated = {
+            self.uavs[uav_id].id: self.uavs[uav_id].terminated
+            for uav_id in self.alive_agents
         }
-        truncated["__all__"] = all(v for v in truncated.values())
+        terminated["__all__"] = all(v for v in terminated.values())
+        truncated = {
+            self.uavs[uav_id].id: self.uavs[uav_id].truncated
+            for uav_id in self.alive_agents
+        }
+        truncated["__all__"] = (
+            all(v for v in truncated.values()) or self._time_elapsed >= self.max_time
+        )
+        # truncated["__all__"] = all(v for v in truncated.values())
 
         # newwer api gymnasium > 0.28
         # return obs, reward, terminated, terminated, info
 
         # old api gym < 0.26.1
         # return obs, reward, done, info
-        return obs, reward, real_done, real_done, info
+        return obs, reward, terminated, truncated, info
 
     def _get_info(self, uav):
         """Must be called after _get_reward
@@ -608,6 +616,7 @@ class RlMus(MultiAgentEnv):
             uav.done = True
             uav.target_reached = True
             reward += self._tgt_reward
+            uav.terminated = True
 
             # # get reward for reaching destination in time
             # if abs(uav.done_dt) < self.t_go_max:
@@ -621,9 +630,15 @@ class RlMus(MultiAgentEnv):
             # No need to check for other reward, UAV is done.
             return reward
 
-        if (abs(uav.pos[0]) > 1.5 or abs(uav.pos[1]) > 1.5 or abs(uav.pos[2]) > 2.0
-            or abs(uav.rpy[0]) > .4 or abs(uav.rpy[1]) > .4):
-            uav.done = True
+        if (
+            abs(uav.pos[0]) > 4
+            or abs(uav.pos[1]) > 4
+            or abs(uav.pos[2]) > 4.0
+            or abs(uav.rpy[0]) > 0.4
+            or abs(uav.rpy[1]) > 0.4
+        ):
+            uav.truncated = True
+            return reward
         # if uav.pos[2] <= 0.02:
         #     reward += -self._crash_penalty
         #     uav.done = True
@@ -651,7 +666,7 @@ class RlMus(MultiAgentEnv):
         # )
 
         # reward += -uav.rel_target_dist
-        reward += max(0, 2 - uav.rel_target_dist**4)
+        reward += max(0, 4 - uav.rel_target_dist**4)
 
         # reward += -3 * uav.los_angle(target) / np.pi
 

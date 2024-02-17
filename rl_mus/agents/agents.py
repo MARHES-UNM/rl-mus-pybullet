@@ -255,6 +255,8 @@ class Uav(Entity):
         self.done = False
         self.target_reached = False
         self.crashed = False
+        self.truncated = False
+        self.terminated = False
 
         if self.ctrl_type == UavCtrlType.RPM:
             self.num_actions = 4

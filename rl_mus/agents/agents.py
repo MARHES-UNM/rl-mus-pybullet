@@ -397,9 +397,23 @@ class Uav(Entity):
         )
         return rpms
 
-    def step(self, action=np.zeros(4)):
+    def preprocess_action(self, action):
         if self.ctrl_type == UavCtrlType.VEL:
-            rpms = action
+
+            if np.linalg.norm(action[0:3]) != 0:
+                vel_unit_vector = action[0:3] / np.linalg.norm(action[0:3])
+            else:
+                vel_unit_vector = np.zeros(3)
+
+            rpms = self.compute_control(
+                pos_des=self.pos,
+                rpy_des=np.array([0, 0, self.rpy[2]]),
+                # vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
+                vel_des=self.vel_lim
+                * np.abs(action[3])
+                * vel_unit_vector,  # target the desired velocity vector
+            )
+
             # if np.linalg.norm(action) != 0:
             #     vel_unit_vector = action / np.linalg.norm(action)
             # else:
@@ -420,6 +434,9 @@ class Uav(Entity):
         else:
             rpms = np.array(self.hover_rpm * (1 + 0.05 * action))
 
+        return rpms
+
+    def step(self, rpms=np.zeros(4)):
         self.rpms = rpms
 
         rpms_sq = np.square(rpms)

@@ -190,7 +190,7 @@ def run(
         best_model_save_path=filename + "/",
         log_path=filename + "/",
         eval_freq=int(1000),
-        n_eval_episodes=5,
+        # n_eval_episodes=5,
         deterministic=True,
         render=False,
     )

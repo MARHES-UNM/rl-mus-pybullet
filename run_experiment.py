@@ -209,6 +209,7 @@ def experiment(args):
     env_config = exp_config["env_config"]
     plot_results = exp_config["plot_results"]
     log_config = exp_config["logger_config"]
+    # log_config["log_freq"] = 48
     renders = env_config["renders"]
 
     # get the algorithm or policy to run
@@ -289,6 +290,7 @@ def experiment(args):
                 else:
                     print("unknow safe action type")
 
+        actions = env.action_space_sample()
         obs, rew, done, truncated, info = env.step(actions)
         # if time_step % (env.env_freq / env_logger.log_freq) == 0:
         env_logger.log(

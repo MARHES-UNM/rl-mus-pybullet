@@ -125,7 +125,7 @@ class TestRlMus(unittest.TestCase):
         env = RlMus(
             env_config={
                 "renders": True,
-                "num_uavs": 4,
+                "num_uavs": 1,
                 "uav_ctrl_type": UavCtrlType.POS,
             }
         )
@@ -147,8 +147,8 @@ class TestRlMus(unittest.TestCase):
                 actions[uav.id][3] = obs[uav.id]["state"][9]
 
             obs, reward, done, truncated, info = env.step(actions)
-            env.render()
-            time.sleep(1 / 240)
+            # env.render()
+            # time.sleep(1 / 240)
 
             for uav in env.uavs.values():
                 plotter.log(uav_id=uav.id, action=actions[uav.id], state=uav.state)
@@ -282,10 +282,12 @@ class TestRlMus(unittest.TestCase):
 
         eps_num = 0
         for time_step in range(num_timesteps):
-            actions = {uav.id: np.zeros(3) for uav in env.uavs.values()}
+            actions = {uav.id: np.zeros(4,) for uav in env.uavs.values()}
+            
             for uav in env.uavs.values():
+                actions[uav.id][3] = env.action_high
                 des_v = self.apf_uav_controller(uav, env.targets[uav.target_id])
-                actions[uav.id] = des_v * uav.vel_lim
+                actions[uav.id][:3] = des_v
 
             obs, reward, done, truncated, info = env.step(actions)
 
@@ -316,8 +318,8 @@ class TestRlMus(unittest.TestCase):
             env_config={
                 "num_uavs": 4,
                 "renders": True,
-                "pybullet_freq": 240,
-                "sim_dt": 1/48
+                # "pybullet_freq": 240,
+                # "sim_dt": 1/48
             }
         )
         log_config = {
@@ -342,14 +344,17 @@ class TestRlMus(unittest.TestCase):
 
         obs, info = env.reset()
         num_seconds = self.num_med_time
+        num_seconds = 6
         num_timesteps = num_seconds * env.env_freq
 
         eps_num = 0
         for time_step in range(num_timesteps):
-            actions = {uav.id: np.zeros(3) for uav in env.uavs.values()}
+            actions = {uav.id: np.zeros(4,) for uav in env.uavs.values()}
             for uav in env.uavs.values():
-                des_v = self.apf_uav_controller(uav, env.targets[uav.target_id])
-                actions[uav.id] = des_v
+                # actions[uav.id][3] = env.uavs[uav.id].vel_lim
+                actions[uav.id][3] = env.action_high
+                des_v = self.apf_uav_controller(uav, env.targets[uav.target_id], ka=100)
+                actions[uav.id][:3] = des_v
 
             obs, reward, done, truncated, info = env.step(actions)
 

@@ -301,6 +301,7 @@ def experiment(args):
         if done["__all__"] or truncated["__all__"]:
 
             end_time = time() - start_time
+            logger.info(f"time_elapsed: {env.time_elapsed}")
             env_logger.log_eps_time(sim_time=env.time_elapsed, real_time=end_time)
             num_episodes += 1
 

@@ -192,7 +192,7 @@ def run(
         eval_freq=int(1000),
         n_eval_episodes=5,
         deterministic=True,
-        render=True,
+        render=False,
     )
     model.learn(
         total_timesteps=(

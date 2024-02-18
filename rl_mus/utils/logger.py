@@ -205,6 +205,7 @@ class EnvLogger(UavLogger):
 
         super().__init__(num_uavs=num_uavs, log_freq=log_freq, ctrl_type=uav_ctrl_type)
 
+        self._log_step_skip = int(self._env_freq / self.log_freq)
         self.parse_log_config()
 
     def parse_log_config(self):
@@ -232,7 +233,7 @@ class EnvLogger(UavLogger):
     def log(self, eps_num, info, obs, reward, action):
 
         self._log_step += 1
-        if not (self._log_step % int(self._env_freq / self.log_freq)) == 0:
+        if not (self._log_step % self._log_step_skip) == 0:
             return
         self._data["eps_time_step"].append(self._log_step / self.log_freq)
         self._data["eps_num"].append(eps_num)
@@ -330,7 +331,7 @@ class EnvLogger(UavLogger):
         data_type="reward",
         ylabel="",
     ):
-        t = np.arange(self._num_samples) / self.log_freq
+        t = np.arange(self._num_samples) * self._log_step_skip / self._env_freq
         for uav_id, idx in self.uav_ids.items():
             data = self._data_np["log"][idx][data_type]
             self.axs[row].plot(t, data, label=f"uav_{uav_id}")

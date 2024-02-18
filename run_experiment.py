@@ -298,7 +298,7 @@ def experiment(args):
         if renders:
             env.render()
 
-        if done["__all__"]:
+        if done["__all__"] or truncated["__all__"]:
 
             end_time = time() - start_time
             env_logger.log_eps_time(sim_time=env.time_elapsed, real_time=end_time)

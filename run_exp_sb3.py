@@ -179,7 +179,7 @@ def run(
     )
 
     #### Target cumulative rewards (problem-dependent) ##########
-    target_reward = 800
+    target_reward = 8000
     callback_on_best = StopTrainingOnRewardThreshold(
         reward_threshold=target_reward, verbose=1
     )

@@ -120,8 +120,22 @@ class RlMusRewWrapper(gym.RewardWrapper):
     def reward(self, reward):
         return reward[self.uav_id]
         # return reward.squeeze()
+class RlMusTermWrapper(gym.Wrapper):
+    def __init__(self):
+        env = RlMusRewWrapper()
+        gym.Wrapper.__init__(self, env)
 
-env = RlMusFlatAct()
+    def step(self, action):
+        obs, rew, term, trunc, info = self.env.step(action)
+        if "__all__" in term:
+            term = term["__all__"]
+        if "__all__" in trunc:
+            trunc = trunc["__all__"]
+
+        return obs, rew, term, trunc, info
+
+
+env = RlMusTermWrapper()
 
 from stable_baselines3.common.env_checker import check_env
 
@@ -156,7 +170,7 @@ def run(
         os.makedirs(filename + "/")
 
     train_env = make_vec_env(
-        RlMusRewWrapper,
+        RlMusTermWrapper,
         env_kwargs=dict(),
         #  env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
         n_envs=1,
@@ -164,7 +178,7 @@ def run(
     )
 
 
-    eval_env = Monitor(RlMusRewWrapper(), None, allow_early_resets=True)
+    eval_env = Monitor(RlMusTermWrapper(), None, allow_early_resets=True)
 
     #### Check the environment's spaces ########################
     print("[INFO] Action space:", train_env.action_space)

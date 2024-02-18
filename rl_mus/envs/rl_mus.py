@@ -650,9 +650,9 @@ class RlMus(MultiAgentEnv):
             return reward
 
         if (
-            abs(uav.pos[0]) > 2.1
-            or abs(uav.pos[1]) > 2.1
-            or abs(uav.pos[2]) > 2.1
+            abs(uav.pos[0]) > self.env_max_l + .1
+            or abs(uav.pos[1]) > self.env_max_w  + .1
+            or abs(uav.pos[2]) > self.env_max_h + .1
             or abs(uav.rpy[0]) > 0.4
             or abs(uav.rpy[1]) > 0.4
         ):

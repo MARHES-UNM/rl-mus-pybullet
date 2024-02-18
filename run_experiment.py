@@ -290,7 +290,6 @@ def experiment(args):
                 else:
                     print("unknow safe action type")
 
-        actions = env.action_space_sample()
         obs, rew, done, truncated, info = env.step(actions)
         # if time_step % (env.env_freq / env_logger.log_freq) == 0:
         env_logger.log(

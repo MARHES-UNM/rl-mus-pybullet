@@ -230,7 +230,7 @@ class Uav(Entity):
         self.g = g
         self.gravity = self.g * self.m
         # orig_scale = 0.12 makes 1 m/s, default 0.03
-        self.vel_lim = 0.03 * self.max_speed_kmh * (1000 / 3600)  # 1 m/s
+        self.vel_lim = 0.12 * self.max_speed_kmh * (1000 / 3600)  # 1 m/s
         self.pwm2rpm_scale = 0.2685
         self.pwm2rpm_const = 4070.3
         self.min_pwm = 20000

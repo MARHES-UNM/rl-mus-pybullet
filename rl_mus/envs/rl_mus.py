@@ -467,7 +467,7 @@ class RlMus(MultiAgentEnv):
                 action = self.get_safe_action(self.uavs[uav_id], action)
 
             # TODO: this may not be needed
-            action = np.clip(action, self.action_low, self.action_high)
+            # action = np.clip(action, self.action_low, self.action_high)
 
             rpms[uav_id] = self.uavs[uav_id].preprocess_action(action)
 

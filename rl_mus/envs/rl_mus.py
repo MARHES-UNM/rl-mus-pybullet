@@ -73,7 +73,7 @@ class RlMus(MultiAgentEnv):
         self._render_width = env_config.setdefault("render_width", 320)
         # this is the timestep, default to 1 / 240
         self._pyb_freq = env_config.setdefault("pybullet_freq", 240)
-        self._env_freq = env_config.setdefault("env_freq", 48)
+        self._env_freq = env_config.setdefault("env_freq", 30)
         self._sim_dt = 1 / self._env_freq
 
         # save the configuration
@@ -649,15 +649,15 @@ class RlMus(MultiAgentEnv):
             # No need to check for other reward, UAV is done.
             return reward
 
-        # if (
-        #     abs(uav.pos[0]) > 2.1
-        #     or abs(uav.pos[1]) > 2.1
-        #     or abs(uav.pos[2]) > 2.1
-        #     # or abs(uav.rpy[0]) > 0.4
-        #     # or abs(uav.rpy[1]) > 0.4
-        # ):
-        #     uav.truncated = True
-        #     return reward
+        if (
+            abs(uav.pos[0]) > 2.1
+            or abs(uav.pos[1]) > 2.1
+            or abs(uav.pos[2]) > 2.1
+            or abs(uav.rpy[0]) > 0.4
+            or abs(uav.rpy[1]) > 0.4
+        ):
+            uav.truncated = True
+            return reward
 
         # if uav.pos[2] <= 0.02:
         #     # reward += -self._crash_penalty
@@ -835,6 +835,7 @@ class RlMus(MultiAgentEnv):
             # position must be good if here
             uav = Uav(
                 pos,
+                # [1, 1, 1],
                 [0, 0, 0],
                 self._physics_client_id,
                 g=self.g,

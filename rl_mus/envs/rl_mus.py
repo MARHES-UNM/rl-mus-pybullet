@@ -528,16 +528,16 @@ class RlMus(MultiAgentEnv):
             self.uavs[uav_id].id: self.uavs[uav_id].terminated
             for uav_id in self.alive_agents
         }
-        terminated = all(v for v in terminated.values())
-        # terminated["__all__"] = all(v for v in terminated.values())
+        # terminated = all(v for v in terminated.values())
+        terminated["__all__"] = all(v for v in terminated.values())
         truncated = {
             self.uavs[uav_id].id: self.uavs[uav_id].truncated
             for uav_id in self.alive_agents
         }
-        truncated = all(v for v in truncated.values()) or self._time_elapsed >= self.max_time
-        # truncated["__all__"] = (
-        #     all(v for v in truncated.values()) or self._time_elapsed >= self.max_time
-        # )
+        # truncated = all(v for v in truncated.values()) or self._time_elapsed >= self.max_time
+        truncated["__all__"] = (
+            all(v for v in truncated.values()) or self._time_elapsed >= self.max_time
+        )
         # truncated["__all__"] = all(v for v in truncated.values())
 
         # newwer api gymnasium > 0.28

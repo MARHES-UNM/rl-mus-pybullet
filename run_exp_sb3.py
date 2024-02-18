@@ -173,7 +173,7 @@ def run(
         RlMusTermWrapper,
         env_kwargs=dict(),
         #  env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
-        n_envs=1,
+        n_envs=16,
         seed=0,
     )
 

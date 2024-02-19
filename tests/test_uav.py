@@ -123,7 +123,6 @@ class TestUav(unittest.TestCase):
             elif i >= 1 * 240 and i < 2 * 240:
                 vel_des[:3] = np.array([0, 0, 1.0])
 
-                print(vel_des)
             elif i >= 2 * 240 and i < 3 * 240:
                 vel_des[:3] = np.array([0, 1.0, 0])
 
@@ -160,7 +159,7 @@ class TestUav(unittest.TestCase):
         plotter = UavLogger()
         plotter.add_uav(self.uav.id)
 
-        time_to_change_vel = .1 * 240  # every 2 secs
+        time_to_change_vel = 0.1 * 240  # every 2 secs
         vel_des = np.zeros(4)
         max_vel = self.uav.vel_lim * 0.5
         for i in range(10 * 240):
@@ -171,7 +170,9 @@ class TestUav(unittest.TestCase):
             self.uav.step(vel_des)
             p.stepSimulation()
 
-            plotter.log(uav_id=self.uav.id, state=self.uav.state.copy(), action=vel_des.copy())
+            plotter.log(
+                uav_id=self.uav.id, state=self.uav.state.copy(), action=vel_des.copy()
+            )
 
         plotter.plot(title="Test Fast velocity tracking", plt_action=True)
 
@@ -184,17 +185,19 @@ class TestUav(unittest.TestCase):
         plotter = UavLogger()
         plotter.add_uav(self.uav.id)
 
-        time_to_change_vel = int(240 / 0.5) # every 2 secs
+        time_to_change_vel = int(240 / 0.5)  # every 2 secs
         vel_des = np.zeros(4)
         max_vel = self.uav.vel_lim * 0.25
         for i in range(10 * 240):
             if i % time_to_change_vel == 0:
                 vel_des[:3] = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
-                vel_des[3] = max_vel 
+                vel_des[3] = max_vel
 
             self.uav.step(vel_des)
             p.stepSimulation()
-            plotter.log(uav_id=self.uav.id, state=self.uav.state.copy(), action=vel_des.copy())
+            plotter.log(
+                uav_id=self.uav.id, state=self.uav.state.copy(), action=vel_des.copy()
+            )
 
         plotter.plot(title="Test Random Velocity Tracking", plt_action=True)
 
@@ -236,7 +239,7 @@ class TestUav(unittest.TestCase):
         plotter = UavLogger(ctrl_type=UavCtrlType.VEL)
         plotter.add_uav(self.uav.id)
         action = np.zeros(4)
-        action[3]= self.uav.vel_lim
+        action[3] = self.uav.vel_lim
         # this determines how fast to complete a circle
         circ_freq = 1.0 / (240.0 * 2.0) * 2.0 * np.pi  # hz
         circ_rad = 0.9 * 100

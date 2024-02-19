@@ -237,7 +237,9 @@ class Uav(Entity):
         self.max_pwm = 65535
         self.kp_for = np.array([0.4, 0.4, 1.25])
         self.ki_for = np.array([0.05, 0.05, 0.05])
-        self.kd_for = np.array([0.2, 0.2, 0.5]) # gym-pybullet-drone uses .5 for z, 0.4 on board
+        self.kd_for = np.array(
+            [0.2, 0.2, 0.5]
+        )  # gym-pybullet-drone uses .5 for z, 0.4 on board
         self.kp_tor = np.array([70000.0, 70000.0, 60000.0])
         self.ki_tor = np.array([0.0, 0.0, 500.0])
         self.kd_tor = np.array([20000.0, 20000.0, 12000.0])
@@ -245,7 +247,7 @@ class Uav(Entity):
         self.last_ang_vel_des = np.zeros(3)
         self.last_ang_v = np.zeros(3)
         self.i_range_xy = 2.0
-        self.i_range_z = 0.15 # on-board use .4
+        self.i_range_z = 0.15  # on-board use .4
         self.i_range_m_xy = 1.0
         self.i_range_m_z = 1500.0
         self.pyb_freq = pyb_freq
@@ -359,7 +361,9 @@ class Uav(Entity):
         # ang_vel_e = ang_vel_des - self.ang_v
         rpy_rate = (self.rpy - self.last_rpy) / self.ctrl_timestep
         ang_vel_e = ang_vel_des - rpy_rate
-        err_d_ang_vel = ((ang_vel_des - self.last_ang_vel_des)  - (rpy_rate - self.last_ang_v)) / self.ctrl_timestep
+        err_d_ang_vel = (
+            (ang_vel_des - self.last_ang_vel_des) - (rpy_rate - self.last_ang_v)
+        ) / self.ctrl_timestep
 
         self.last_ang_v = rpy_rate.copy()
         self.last_ang_vel_des = ang_vel_des.copy()

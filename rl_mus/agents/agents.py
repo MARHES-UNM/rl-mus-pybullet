@@ -237,11 +237,15 @@ class Uav(Entity):
         self.max_pwm = 65535
         self.kp_for = np.array([0.4, 0.4, 1.25])
         self.ki_for = np.array([0.05, 0.05, 0.05])
-        self.kd_for = np.array([0.2, 0.2, 0.5])
+        self.kd_for = np.array([0.2, 0.2, 0.4])
         self.kp_tor = np.array([70000.0, 70000.0, 60000.0])
         self.ki_tor = np.array([0.0, 0.0, 500.0])
         self.kd_tor = np.array([20000.0, 20000.0, 12000.0])
-        # TODO: delete
+        self.i_range_xy = 2.0
+        self.i_range_z = 0.4
+        self.i_range_m_xy = 1.0
+        self.i_range_m_z = 1500.0
+        self.kd_omega_rp = 200.0
         self.pyb_freq = pyb_freq
         self.ctrl_freq = ctrl_freq
         self.ctrl_timestep = 1.0 / self.ctrl_freq
@@ -274,6 +278,19 @@ class Uav(Entity):
     def compute_control(
         self, pos_des, rpy_des, vel_des=np.zeros(3), ang_vel_des=np.zeros(3)
     ):
+        """Based on crazyflie mellinger controller:
+        https://github.com/CrazyflieTHI/crazyflie-firmware/blob/master/src/modules/src/controller/controller_mellinger.c
+        https://github.com/utiasDSL/gym-pybullet-drones/blob/main/gym_pybullet_drones/control/DSLPIDControl.py
+
+        Args:
+            pos_des (_type_): _description_
+            rpy_des (_type_): _description_
+            vel_des (_type_, optional): _description_. Defaults to np.zeros(3).
+            ang_vel_des (_type_, optional): _description_. Defaults to np.zeros(3).
+
+        Returns:
+            _type_: _description_
+        """
         thrust_des, comp_rpy_des = self.compute_position_control(
             pos_des, rpy_des, vel_des
         )
@@ -288,8 +305,8 @@ class Uav(Entity):
         vel_e = vel_des - self.vel
 
         self.integral_pos_e = self.integral_pos_e + pos_e * self.ctrl_timestep
-        self.integral_pos_e = np.clip(self.integral_pos_e, -2.0, 2.0)
-        self.integral_pos_e[2] = np.clip(self.integral_pos_e[2], -0.15, 0.15)
+        self.integral_pos_e = np.clip(self.integral_pos_e, -self.i_range_xy, self.i_range_xy)
+        self.integral_pos_e[2] = np.clip(self.integral_pos_e[2], -self.i_range_z, self.i_range_z)
         thrust_des = (
             np.multiply(self.kp_for, pos_e)
             + np.multiply(self.ki_for, self.integral_pos_e)
@@ -336,8 +353,8 @@ class Uav(Entity):
         ang_vel_e = ang_vel_des - (self.rpy - self.last_rpy) / self.ctrl_timestep
         self.last_rpy = self.rpy
         self.integral_rpy_e = self.integral_rpy_e - rot_e * self.ctrl_timestep
-        self.integral_rpy_e = np.clip(self.integral_rpy_e, -1500.0, 1500.0)
-        self.integral_rpy_e[0:2] = np.clip(self.integral_rpy_e[0:2], -1.0, 1.0)
+        self.integral_rpy_e = np.clip(self.integral_rpy_e, -self.i_range_m_z, self.i_range_m_z)
+        self.integral_rpy_e[0:2] = np.clip(self.integral_rpy_e[0:2], -self.i_range_m_xy, self.i_range_m_xy)
 
         torques_des = (
             -np.multiply(self.kp_tor, rot_e)
@@ -408,23 +425,11 @@ class Uav(Entity):
             rpms = self.compute_control(
                 pos_des=self.pos,
                 rpy_des=np.array([0, 0, self.rpy[2]]),
-                # vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
                 vel_des=self.vel_lim
                 * np.abs(action[3])
                 * vel_unit_vector,  # target the desired velocity vector
             )
 
-            # if np.linalg.norm(action) != 0:
-            #     vel_unit_vector = action / np.linalg.norm(action)
-            # else:
-            #     vel_unit_vector = np.zeros(3)
-
-            # rpms = self.compute_control(
-            #     pos_des=self.pos,
-            #     rpy_des=np.array([0, 0, self.rpy[2]]),
-            #     # vel_des=self.vel_lim * np.abs(action) * vel_unit_vector,
-            #     vel_des=self.vel_lim * vel_unit_vector,
-            # )
         elif self.ctrl_type == UavCtrlType.POS:
             rpms = self.compute_control(
                 pos_des=action[0:3],
@@ -436,7 +441,12 @@ class Uav(Entity):
 
         return rpms
 
-    def step(self, rpms=np.zeros(4)):
+    def step(self, action=np.zeros(4), preprocess_action=True):
+        if preprocess_action:
+            rpms = self.preprocess_action(action)
+        else:
+            rpms = action
+
         self.rpms = rpms
 
         rpms_sq = np.square(rpms)

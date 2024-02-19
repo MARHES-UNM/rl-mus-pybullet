@@ -44,11 +44,13 @@ class TestUav(unittest.TestCase):
         p.setAdditionalSearchPath(pybullet_data.getDataPath())  # optionally
         p.setGravity(0, 0, -9.81)
         self.planeId = p.loadURDF("plane.urdf")
+        self.n_secs_short = 2
+        self.n_secs_med = 4
+        self.n_secs_long = 10
 
     def tearDown(self) -> None:
         p.disconnect()
 
-    # @unittest.skip
     def test_init_uav(self):
         start_pos = [0, 0, 1]
         start_rpy = [0, 0, 0]
@@ -62,7 +64,6 @@ class TestUav(unittest.TestCase):
         p.stepSimulation()
         print(self.uav.state)
 
-    # @unittest.skip
     def test_uav_hover_rpm(self):
         start_pos = [0, 0, 1]
         start_rpy = [0, 0, 0]
@@ -75,7 +76,8 @@ class TestUav(unittest.TestCase):
 
         rpms_des = np.zeros(4)
 
-        for i in range(2 * 240):
+        n_steps = int(self.n_secs_short * self.uav.pyb_freq)
+        for i in range(n_steps):
             self.uav.step(rpms_des)
             p.stepSimulation()
 
@@ -92,8 +94,10 @@ class TestUav(unittest.TestCase):
         plotter = UavLogger(ctrl_type=UavCtrlType.VEL)
         plotter.add_uav(self.uav.id)
 
-        vel_des = np.zeros(3)
-        for i in range(10 * 240):
+        vel_des = np.zeros(4)
+        n_steps = int(self.n_secs_short * self.uav.pyb_freq)
+
+        for i in range(n_steps):
             self.uav.step(vel_des)
             p.stepSimulation()
 
@@ -101,7 +105,6 @@ class TestUav(unittest.TestCase):
 
         plotter.plot("Test UAV Hover Velocity", plt_action=True)
 
-    # @unittest.skip
     def test_uav_vel_tracking(self):
         self.uav = Uav(
             [3, 2, 1], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.VEL
@@ -110,38 +113,42 @@ class TestUav(unittest.TestCase):
         plotter = UavLogger()
         plotter.add_uav(self.uav.id)
 
-        vel_des = np.zeros(3)
-        for i in range(10 * 240):
+        vel_des = np.zeros(4)
+        vel_des[3] = self.uav.vel_lim
+
+        n_steps = int(self.n_secs_long * self.uav.pyb_freq)
+        for i in range(n_steps):
             if i < 1 * 240:
                 pass
             elif i >= 1 * 240 and i < 2 * 240:
-                vel_des = np.array([0, 0, 1.0])
+                vel_des[:3] = np.array([0, 0, 1.0])
 
+                print(vel_des)
             elif i >= 2 * 240 and i < 3 * 240:
-                vel_des = np.array([0, 1.0, 0])
+                vel_des[:3] = np.array([0, 1.0, 0])
 
             elif i >= 3 * 240 and i < 4 * 240:
-                vel_des = np.array([1.0, 0, 0])
+                vel_des[:3] = np.array([1.0, 0, 0])
 
             elif i >= 4 * 240 and i < 5 * 240:
-                vel_des = np.array([1.0, 1.0, 1.0])
+                vel_des[:3] = np.array([1.0, 1.0, 1.0])
 
             elif i >= 6 * 240 and i < 7 * 240:
-                vel_des = np.array([-1.0, 0.0, 0.0])
+                vel_des[:3] = np.array([-1.0, 0.0, 0.0])
 
             elif i >= 7 * 240 and i < 8 * 240:
-                vel_des = np.array([0.0, -0.5, 0.0])
+                vel_des[:3] = np.array([0.0, -0.5, 0.0])
 
             elif i >= 8 * 240 and i < 9 * 240:
-                vel_des = np.array([0.0, 0.0, -0.5])
+                vel_des[:3] = np.array([0.0, 0.0, -0.5])
 
             elif i >= 9 * 240:
-                vel_des = np.array([0, 0, 0])
+                vel_des[:3] = np.array([0, 0, 0])
 
             self.uav.step(vel_des)
             p.stepSimulation()
 
-            plotter.log(self.uav.id, state=self.uav.state, action=vel_des)
+            plotter.log(self.uav.id, state=self.uav.state.copy(), action=vel_des.copy())
 
         plotter.plot(title="Test UAV velocity control", plt_action=True)
 
@@ -154,16 +161,17 @@ class TestUav(unittest.TestCase):
         plotter.add_uav(self.uav.id)
 
         time_to_change_vel = .1 * 240  # every 2 secs
-        vel_des = np.zeros(3)
+        vel_des = np.zeros(4)
         max_vel = self.uav.vel_lim * 0.5
         for i in range(10 * 240):
             if i % time_to_change_vel == 0:
-                vel_des = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
+                vel_des[:3] = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
+                vel_des[3] = max_vel
 
             self.uav.step(vel_des)
             p.stepSimulation()
 
-            plotter.log(uav_id=self.uav.id, state=self.uav.state, action=vel_des)
+            plotter.log(uav_id=self.uav.id, state=self.uav.state.copy(), action=vel_des.copy())
 
         plotter.plot(title="Test Fast velocity tracking", plt_action=True)
 
@@ -176,21 +184,22 @@ class TestUav(unittest.TestCase):
         plotter = UavLogger()
         plotter.add_uav(self.uav.id)
 
-        time_to_change_vel = 2 * 240  # every 2 secs
-        vel_des = np.zeros(3)
-        max_vel = self.uav.vel_lim * 0.5
+        time_to_change_vel = int(240 / 0.5) # every 2 secs
+        vel_des = np.zeros(4)
+        max_vel = self.uav.vel_lim * 0.25
         for i in range(10 * 240):
             if i % time_to_change_vel == 0:
-                vel_des = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
+                vel_des[:3] = np.random.uniform(low=-max_vel, high=max_vel, size=(3,))
+                vel_des[3] = max_vel 
 
             self.uav.step(vel_des)
             p.stepSimulation()
-            plotter.log(uav_id=self.uav.id, state=self.uav.state, action=vel_des)
+            plotter.log(uav_id=self.uav.id, state=self.uav.state.copy(), action=vel_des.copy())
 
         plotter.plot(title="Test Random Velocity Tracking", plt_action=True)
 
     # @unittest.skip
-    def test_uav_circular_traj(self):
+    def test_uav_circular_traj_pos(self):
         """
         https://pressbooks.online.ucf.edu/phy2048tjb/chapter/4-4-uniform-circular-motion/
         """
@@ -226,7 +235,8 @@ class TestUav(unittest.TestCase):
 
         plotter = UavLogger(ctrl_type=UavCtrlType.VEL)
         plotter.add_uav(self.uav.id)
-        action = np.zeros(3)
+        action = np.zeros(4)
+        action[3]= self.uav.vel_lim
         # this determines how fast to complete a circle
         circ_freq = 1.0 / (240.0 * 2.0) * 2.0 * np.pi  # hz
         circ_rad = 0.9 * 100

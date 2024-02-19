@@ -489,7 +489,7 @@ class RlMus(MultiAgentEnv):
         # artificial step
         for num_step in range(self._sim_steps):
             for uav_id, rpm in rpms.items():
-                self.uavs[uav_id].step(rpm)
+                self.uavs[uav_id].step(rpm, preprocess_action=False)
             # # step obstacles
             # for obstacle in self.obstacles:
             #     obstacle.step(np.array([self.target.vx, self.target.vy]))

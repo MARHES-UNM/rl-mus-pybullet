@@ -68,3 +68,5 @@ https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/
     https://github.com/arplaboratory/learning-to-fly
 
     [RLtools: A Fast, Portable Deep RL Library for Continuous Control](https://arxiv.org/pdf/2306.03530.pdf)
+
+    [Deep Learning for Optimization of Trajectories for Quadrotors](https://arxiv.org/abs/2309.15191)

@@ -62,3 +62,9 @@ https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/
     [Reinforcement Learning](http://incompleteideas.net/book/RLbook2020.pdf)
     http://incompleteideas.net/book/the-book-2nd.html
     https://drive.google.com/drive/folders/1cMJWR90IkMxWngWpjOtD-qdLS_a7KiYL
+
+
+    [learning to fly in sections](https://spectrum.ieee.org/drone-quadrotor)
+    https://github.com/arplaboratory/learning-to-fly
+
+    [RLtools: A Fast, Portable Deep RL Library for Continuous Control](https://arxiv.org/pdf/2306.03530.pdf)

@@ -244,6 +244,18 @@ class Uav(Entity):
         self.ki_tor = np.array([0.0, 0.0, 500.0])
         self.kd_tor = np.array([20000.0, 20000.0, 12000.0])
         self.kd_omega_rp = np.array([200.0, 200.0, 0.0])
+
+        # TODO: values below are from https://arxiv.org/pdf/2306.03951.pdf
+        # self.kp_for = np.array([0.364, 0.364, 1.169])
+        # self.ki_for = np.array([0.052, 0.052, 0.052])
+        # self.kd_for = np.array(
+        #     [0.234, 0.234, 0.586]
+        # )  # gym-pybullet-drone uses .5 for z, 0.4 on board
+        # self.kp_tor = np.array([64786.842, 64786.842, 55531.579])
+        # self.ki_tor = np.array([0.0, 0.0, 599.666])
+        # self.kd_tor = np.array([17217.406, 17217.406, 10330.44])
+        # self.kd_omega_rp = np.array([200.0, 200.0, 0.0])
+
         self.last_ang_vel_des = np.zeros(3)
         self.last_ang_v = np.zeros(3)
         self.i_range_xy = 2.0

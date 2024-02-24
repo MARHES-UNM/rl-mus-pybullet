@@ -629,7 +629,8 @@ class RlMus(MultiAgentEnv):
 
         uav.done_dt = t_remaining
 
-        reward += max(0, 2 - uav.rel_target_dist**4)
+        # reward += max(0, 2 - uav.rel_target_dist**4)
+        reward += - .3 * uav.rel_target_dist
 
         # pos reward if uav reaches target
         if is_reached:

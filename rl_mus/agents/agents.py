@@ -277,6 +277,10 @@ class Uav(Entity):
         self.crashed = False
         self.truncated = False
         self.terminated = False
+        self.uav_collision = 0.0
+        self.obs_collision = 0.0
+        self.rel_target_dist = 0.0
+        self.rel_target_vel = 0.0
 
         if self.ctrl_type == UavCtrlType.RPM:
             self.num_actions = 4

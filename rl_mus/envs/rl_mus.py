@@ -652,7 +652,7 @@ class RlMus(MultiAgentEnv):
         if (
             abs(uav.pos[0]) > self.env_max_l + .1
             or abs(uav.pos[1]) > self.env_max_w  + .1
-            or abs(uav.pos[2]) > self.env_max_h + .1
+            or uav.pos[2] > self.env_max_h + .1
             or abs(uav.rpy[0]) > 0.4
             or abs(uav.rpy[1]) > 0.4
         ):
@@ -807,8 +807,6 @@ class RlMus(MultiAgentEnv):
         p.setGravity(0, 0, -self.g)
         p.setTimeStep(self._pyb_dt)
         p.setRealTimeSimulation(0)
-
-        p = self._p
 
         self._time_elapsed = 0.0
         self._sim_step = 0

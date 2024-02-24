@@ -30,6 +30,7 @@ from stable_baselines3.common.callbacks import (
     StopTrainingOnRewardThreshold,
 )
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
 from stable_baselines3.common.evaluation import evaluate_policy
 
@@ -140,7 +141,7 @@ env = RlMusTermWrapper()
 from stable_baselines3.common.env_checker import check_env
 
 # It will check your custom environment and output additional warnings if needed
-# check_env(env)
+check_env(env)
 
 
 obs, info = env.reset()
@@ -178,7 +179,19 @@ def run(
     )
 
 
-    eval_env = Monitor(RlMusTermWrapper(), None, allow_early_resets=True)
+    train_env = VecNormalize(train_env, norm_obs =True)
+
+
+    eval_env = make_vec_env(
+        RlMusTermWrapper, 
+        env_kwargs=dict(), 
+        n_envs=1, 
+        seed=1
+    )
+
+    # eval_env = Monitor(VecNormalize(eval_env, norm_obs=True), None, allow_early_resets=True)
+    # eval_env = Monitor(RlMusTermWrapper(), None, allow_early_resets=True)
+    eval_env = VecNormalize(Monitor(eval_env, None, allow_early_resets=True), norm_obs=True)
 
     #### Check the environment's spaces ########################
     print("[INFO] Action space:", train_env.action_space)

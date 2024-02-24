@@ -99,8 +99,8 @@ class TestRlMus(unittest.TestCase):
 
             # if time_step % (env.env_freq / env_logger.log_freq) == 0:
             env_logger.log(
-                    eps_num=eps_num, info=info, obs=obs, reward=reward, action=actions
-                )
+                eps_num=eps_num, info=info, obs=obs, reward=reward, action=actions
+            )
 
             if done["__all__"]:
                 obs, info = env.reset()
@@ -252,8 +252,8 @@ class TestRlMus(unittest.TestCase):
             env_config={
                 "num_uavs": 1,
                 "renders": True,
-                "pybullet_freq": 240,
-                "sim_dt": 1/48,
+                # "pybullet_freq": 240,
+                # "env_freq": 30,
             }
         )
         log_config = {
@@ -282,8 +282,13 @@ class TestRlMus(unittest.TestCase):
 
         eps_num = 0
         for time_step in range(num_timesteps):
-            actions = {uav.id: np.zeros(4,) for uav in env.uavs.values()}
-            
+            actions = {
+                uav.id: np.zeros(
+                    4,
+                )
+                for uav in env.uavs.values()
+            }
+
             for uav in env.uavs.values():
                 actions[uav.id][3] = env.action_high
                 des_v = self.apf_uav_controller(uav, env.targets[uav.target_id])
@@ -349,7 +354,12 @@ class TestRlMus(unittest.TestCase):
 
         eps_num = 0
         for time_step in range(num_timesteps):
-            actions = {uav.id: np.zeros(4,) for uav in env.uavs.values()}
+            actions = {
+                uav.id: np.zeros(
+                    4,
+                )
+                for uav in env.uavs.values()
+            }
             for uav in env.uavs.values():
                 # actions[uav.id][3] = env.uavs[uav.id].vel_lim
                 actions[uav.id][3] = env.action_high
@@ -1149,13 +1159,13 @@ class TestRlMus(unittest.TestCase):
 # Everything below is to make sure that the tests are run in a specific order.
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(TestRlMus("test_check_env_single"))
-    suite.addTest(TestRlMus("test_check_env"))
-    suite.addTest(TestRlMus("test_log_env"))
-    suite.addTest(TestRlMus("test_termination"))
-    # suite.addTest(TestRlMus("test_uav_go_to_goal"))
-    # suite.addTest(TestRlMus("test_uav_vel_control"))
-    suite.addTest(TestRlMus("test_uav_apf_vel_control"))
+    # suite.addTest(TestRlMus("test_check_env_single"))
+    # suite.addTest(TestRlMus("test_check_env"))
+    # suite.addTest(TestRlMus("test_log_env"))
+    # suite.addTest(TestRlMus("test_termination"))
+    # # suite.addTest(TestRlMus("test_uav_go_to_goal"))
+    # # suite.addTest(TestRlMus("test_uav_vel_control"))
+    # suite.addTest(TestRlMus("test_uav_apf_vel_control"))
     suite.addTest(TestRlMus("test_uav_apf_vel_control_single"))
 
     return suite

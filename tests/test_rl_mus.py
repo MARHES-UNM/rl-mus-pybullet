@@ -278,6 +278,7 @@ class TestRlMus(unittest.TestCase):
 
         obs, info = env.reset()
         num_seconds = self.num_med_time
+        # num_seconds = 8
         num_timesteps = num_seconds * env.env_freq
 
         eps_num = 0

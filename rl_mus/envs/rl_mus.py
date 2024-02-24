@@ -520,10 +520,10 @@ class RlMus(MultiAgentEnv):
         # calculate done for each agent
         # done = {self.uavs[id].id: self.uavs[id].done for id in self.alive_agents}
         # fake_done = {self.uavs[id].id: False for id in self.alive_agents}
-        # real_done = {self.uavs[id].id: self.uavs[id].done for id in self.alive_agents}
-        # real_done["__all__"] = (
-        #     all(v for v in real_done.values()) or self._time_elapsed >= self.max_time
-        # )
+        real_done = {self.uavs[id].id: self.uavs[id].done for id in self.alive_agents}
+        real_done["__all__"] = (
+            all(v for v in real_done.values()) or self._time_elapsed >= self.max_time
+        )
         terminated = {
             self.uavs[uav_id].id: self.uavs[uav_id].terminated
             for uav_id in self.alive_agents
@@ -546,7 +546,8 @@ class RlMus(MultiAgentEnv):
         # old api gym < 0.26.1
         # return obs, reward, done, info
         # print(f"terminated: {terminated}\ntruncated: {truncated}")
-        return obs, reward, terminated, truncated, info
+        # return obs, reward, terminated, truncated, info
+        return obs, reward, real_done, real_done, info
 
     def _get_info(self, uav):
         """Must be called after _get_reward
@@ -657,6 +658,8 @@ class RlMus(MultiAgentEnv):
             or abs(uav.rpy[1]) > 0.4
         ):
             uav.truncated = True
+            uav.done = True
+            reward += -100
             return reward
 
         # if uav.pos[2] <= 0.02:

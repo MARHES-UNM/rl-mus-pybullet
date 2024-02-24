@@ -273,12 +273,13 @@ def experiment(args):
                 actions[idx] = env.get_time_coord_action(env.uavs[idx])
             elif algo_to_run == "PPO":
                 if use_policy:
-                    actions[idx] = algo.compute_single_action(prep.transform(obs[idx]))[
-                        0
-                    ]
+                    actions[idx] = algo.compute_single_action(
+                        prep.transform(obs[idx]), # clip_actions=True
+                    )[0]
                 else:
                     actions[idx] = algo.compute_single_action(
-                        obs[idx], policy_id="shared_policy"
+                        obs[idx],
+                        policy_id="shared_policy",  # clip_actions=True
                     )
 
             if exp_config["exp_config"]["safe_action_type"] is not None:

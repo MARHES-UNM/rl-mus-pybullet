@@ -615,7 +615,8 @@ class RlMus(MultiAgentEnv):
         uav.obs_collision = 0.0
         uav.rel_target_dist = uav.rel_dist(target)
         uav.rel_target_vel = uav.rel_vel(target)
-        is_reached = uav.rel_target_dist <= self._d_thresh
+        # is_reached = uav.rel_target_dist <= self._d_thresh
+        is_reached = (uav.rel_target_dist <= 0.15)
 
         if uav.done:
             # UAV most have finished last time_step, report zero collisions

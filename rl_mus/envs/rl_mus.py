@@ -138,6 +138,7 @@ class RlMus(MultiAgentEnv):
             num_obstacle_shape = self.obstacles[0].state.shape[0]
 
         num_uav_state_shape = self.uavs[self.first_uav_id].state.shape
+        action_buffer_size = self.uavs[self.first_uav_id].action_buffer_size
 
         obs_space = spaces.Dict(
             {
@@ -168,6 +169,12 @@ class RlMus(MultiAgentEnv):
                             low=-np.inf,
                             high=np.inf,
                             shape=(1,),
+                            dtype=np.float32,
+                        ),
+                        "action_buffer": spaces.Box(
+                            low=self.action_low,
+                            high=self.action_high,
+                            shape=(action_buffer_size, self.num_actions),
                             dtype=np.float32,
                         ),
                         # "constraint": spaces.Box(
@@ -469,8 +476,9 @@ class RlMus(MultiAgentEnv):
             # TODO: this may not be needed
             # action = np.clip(action, self.action_low, self.action_high)
 
-            target = self.targets[self.uavs[uav_id].target_id]
-            action = self.uavs[uav_id].apf_control(target)
+            # target = self.targets[self.uavs[uav_id].target_id]
+            # action = self.uavs[uav_id].apf_control(target)
+            self.uavs[uav_id].action_buffer.append(action)
             rpms[uav_id] = self.uavs[uav_id].preprocess_action(action)
 
             # if np.linalg.norm(action[0:3]) != 0:
@@ -601,6 +609,7 @@ class RlMus(MultiAgentEnv):
             "done_dt": np.array(
                 [self.time_final - self._time_elapsed], dtype=np.float32
             ),
+            "action_buffer": np.array(uav.action_buffer, dtype=np.float32),
             # "other_uav_obs": other_uav_states.reshape(-1).astype(np.float32),
             # TODO: handle obstacles
             # "obstacles": obstacles_to_add.astype(np.float32),
@@ -618,7 +627,7 @@ class RlMus(MultiAgentEnv):
         uav.rel_target_dist = uav.rel_dist(target)
         uav.rel_target_vel = uav.rel_vel(target)
         # is_reached = uav.rel_target_dist <= self._d_thresh
-        is_reached = (uav.rel_target_dist <= 0.15)
+        is_reached = uav.rel_target_dist <= 0.15
 
         if uav.done:
             # UAV most have finished last time_step, report zero collisions
@@ -633,7 +642,7 @@ class RlMus(MultiAgentEnv):
         uav.done_dt = t_remaining
 
         # reward += max(0, 2 - uav.rel_target_dist**4)
-        reward += - .3 * uav.rel_target_dist
+        reward += -0.3 * uav.rel_target_dist
 
         # pos reward if uav reaches target
         if is_reached:
@@ -655,9 +664,9 @@ class RlMus(MultiAgentEnv):
             return reward
 
         if (
-            abs(uav.pos[0]) > self.env_max_l + .1
-            or abs(uav.pos[1]) > self.env_max_w  + .1
-            or uav.pos[2] > self.env_max_h + .1
+            abs(uav.pos[0]) > self.env_max_l + 0.1
+            or abs(uav.pos[1]) > self.env_max_w + 0.1
+            or uav.pos[2] > self.env_max_h + 0.1
             or abs(uav.rpy[0]) > 0.4
             or abs(uav.rpy[1]) > 0.4
         ):

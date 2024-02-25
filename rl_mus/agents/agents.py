@@ -1,3 +1,4 @@
+from collections import deque
 import numpy as np
 import os
 
@@ -271,6 +272,7 @@ class Uav(Entity):
         self.integral_rpy_e = np.zeros(3)
 
         self.hover_rpm = np.array([np.sqrt((self.g * self.m) / (4 * self.kf))] * 4)
+
         self.target_id = None
         self.done = False
         self.target_reached = False
@@ -294,6 +296,11 @@ class Uav(Entity):
             self.num_actions = 4
             self.action_low = -np.ones(self.num_actions) * self.vel_lim
             self.action_high = np.ones(self.num_actions) * self.vel_lim
+
+        self.action_buffer_size = int(self.ctrl_freq // 2)
+        self.action_buffer = deque(maxlen=self.action_buffer_size)
+        for _ in range(self.action_buffer_size):
+            self.action_buffer.append(np.zeros(self.num_actions))
 
     def compute_control(
         self, pos_des, rpy_des, vel_des=np.zeros(3), ang_vel_des=np.zeros(3)
@@ -500,7 +507,7 @@ class Uav(Entity):
             )
 
         return des_v
-    
+
     def step(self, action=np.zeros(4), preprocess_action=True):
         if preprocess_action:
             rpms = self.preprocess_action(action)

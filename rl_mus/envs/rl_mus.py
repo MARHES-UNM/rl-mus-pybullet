@@ -602,7 +602,7 @@ class RlMus(MultiAgentEnv):
         target = self.targets[uav.target_id]
         uav.rel_target_dist = uav.rel_dist(target)
         uav.rel_target_vel = uav.rel_vel(target)
-        los_angle = uav.los_angle(target)
+        # los_angle = uav.los_angle(target)
 
         # TODO: handle obstacles
         # closest_obstacles = self._get_closest_obstacles(uav)

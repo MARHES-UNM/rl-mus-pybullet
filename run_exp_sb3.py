@@ -48,7 +48,8 @@ DEFAULT_COLAB = False
 DEFAULT_AGENTS = 2
 DEFAULT_MA = False
 
-env_cfg  = {"num_uavs": 1}
+# env_cfg  = {"num_uavs": 1, "renders": True}
+env_cfg  = {"num_uavs": 4}
 from gymnasium import spaces
 # import gym
 # from gym import spaces
@@ -244,46 +245,42 @@ def run(
     ############################################################
     ############################################################
 
-    if local:
-        input("Press Enter to continue...")
+    # if local:
+    #     input("Press Enter to continue...")
 
-    # # if os.path.isfile(filename+'/final_model.zip'):
-    # #     path = filename+'/final_model.zip'
+    # filename=r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.25.2024_07.07.12'
+    # if os.path.isfile(filename+'/final_model.zip'):
+    #     path = filename+'/final_model.zip'
     # if os.path.isfile(filename+'/best_model.zip'):
     #     path = filename+'/best_model.zip'
     # else:
     #     print("[ERROR]: no model under the specified path", filename)
     # model = PPO.load(path)
 
-    # #### Show (and record a video of) the model's performance ##
-    # if not multiagent:
-    #     test_env = HoverAviary(gui=gui,
-    #                            obs=DEFAULT_OBS,
-    #                            act=DEFAULT_ACT,
-    #                            record=record_video)
-    #     test_env_nogui = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
-    # else:
-    #     test_env = MultiHoverAviary(gui=gui,
-    #                                     num_drones=DEFAULT_AGENTS,
-    #                                     obs=DEFAULT_OBS,
-    #                                     act=DEFAULT_ACT,
-    #                                     record=record_video)
-    #     test_env_nogui = MultiHoverAviary(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT)
-    # logger = Logger(logging_freq_hz=int(test_env.CTRL_FREQ),
-    #             num_drones=DEFAULT_AGENTS if multiagent else 1,
-    #             output_folder=output_folder,
-    #             colab=colab
-    #             )
+    # # #### Show (and record a video of) the model's performance ##
+    # # test_env = HoverAviary(gui=gui,
+    # #                            obs=DEFAULT_OBS,
+    # #                            act=DEFAULT_ACT,
+    # #                            record=record_video)
+    # test_env = RlMusRewWrapper()
+    # # test_env_nogui = RlMusRewWrapper()
+    
+    # # logger = Logger(logging_freq_hz=int(test_env.CTRL_FREQ),
+    # #             num_drones=DEFAULT_AGENTS if multiagent else 1,
+    # #             output_folder=output_folder,
+    # #             colab=colab
+    # #             )
 
-    # mean_reward, std_reward = evaluate_policy(model,
-    #                                           test_env_nogui,
-    #                                           n_eval_episodes=10
-    #                                           )
-    # print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
+    # # test_env_nogui = VecNormalize.load()
+    # # mean_reward, std_reward = evaluate_policy(model,
+    # #                                           test_env_nogui,
+    # #                                           n_eval_episodes=10
+    # #                                           )
+    # # print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
 
     # obs, info = test_env.reset(seed=42, options={})
     # start = time.time()
-    # for i in range((test_env.EPISODE_LEN_SEC+2)*test_env.CTRL_FREQ):
+    # for i in range(1000):
     #     action, _states = model.predict(obs,
     #                                     deterministic=True
     #                                     )
@@ -291,37 +288,12 @@ def run(
     #     obs2 = obs.squeeze()
     #     act2 = action.squeeze()
     #     print("Obs:", obs, "\tAction", action, "\tReward:", reward, "\tTerminated:", terminated, "\tTruncated:", truncated)
-    #     if DEFAULT_OBS == ObservationType.KIN:
-    #         if not multiagent:
-    #             logger.log(drone=0,
-    #                 timestamp=i/test_env.CTRL_FREQ,
-    #                 state=np.hstack([obs2[0:3],
-    #                                     np.zeros(4),
-    #                                     obs2[3:15],
-    #                                     act2
-    #                                     ]),
-    #                 control=np.zeros(12)
-    #                 )
-    #         else:
-    #             for d in range(DEFAULT_AGENTS):
-    #                 logger.log(drone=d,
-    #                     timestamp=i/test_env.CTRL_FREQ,
-    #                     state=np.hstack([obs2[d][0:3],
-    #                                         np.zeros(4),
-    #                                         obs2[d][3:15],
-    #                                         act2[d]
-    #                                         ]),
-    #                     control=np.zeros(12)
-    #                     )
     #     test_env.render()
     #     print(terminated)
-    #     sync(i, start, test_env.CTRL_TIMESTEP)
+    #     # sync(i, start, test_env.CTRL_TIMESTEP)
     #     if terminated:
-    #         obs = test_env.reset(seed=42, options={})
+    #         obs, info = test_env.reset(seed=42, options={})
     # test_env.close()
-
-    # if plot and DEFAULT_OBS == ObservationType.KIN:
-    #     logger.plot()
 
 
 if __name__ == "__main__":

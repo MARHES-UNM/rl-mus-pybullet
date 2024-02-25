@@ -469,6 +469,8 @@ class RlMus(MultiAgentEnv):
             # TODO: this may not be needed
             # action = np.clip(action, self.action_low, self.action_high)
 
+            target = self.targets[self.uavs[uav_id].target_id]
+            action = self.uavs[uav_id].apf_control(target)
             rpms[uav_id] = self.uavs[uav_id].preprocess_action(action)
 
             # if np.linalg.norm(action[0:3]) != 0:

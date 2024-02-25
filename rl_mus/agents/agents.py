@@ -478,6 +478,29 @@ class Uav(Entity):
 
         return rpms
 
+    def apf_control(self, target, ka=1):
+        agent_pos = self.pos
+        target_pos = target.pos
+        alpha = 0
+
+        dist_to_target = self.rel_dist(target) + 0.001
+
+        target_star = 1 * (target.rad + self.rad)
+        des_v = np.zeros(4)
+        des_v[3] = self.vel_lim
+
+        if dist_to_target <= target_star:
+            des_v[:3] = np.zeros(3)
+
+        else:
+            des_v[:3] = (
+                -ka
+                * (1 / dist_to_target**alpha)
+                * ((agent_pos - target_pos) / dist_to_target)
+            )
+
+        return des_v
+    
     def step(self, action=np.zeros(4), preprocess_action=True):
         if preprocess_action:
             rpms = self.preprocess_action(action)

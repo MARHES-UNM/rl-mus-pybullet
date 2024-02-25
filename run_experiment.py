@@ -109,7 +109,7 @@ def train(args):
             # create_env_on_local_worker=True,
             # rollout_fragment_length="auto",
             batch_mode="complete_episodes",
-            observation_filter="MeanStdFilter", # or "NoFilter"
+            # observation_filter="MeanStdFilter",  # or "NoFilter"
         )
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
         .resources(
@@ -173,7 +173,7 @@ def train(args):
                 num_to_keep=100,
                 # checkpoint_score_attribute="",
                 checkpoint_at_end=True,
-                checkpoint_frequency=25,
+                checkpoint_frequency=5,
             ),
         ),
     )
@@ -237,6 +237,14 @@ def experiment(args):
             prep = get_preprocessor(env_obs_space)(env_obs_space)
 
             env = RlMus(env_config)
+            c = list(
+                filter(
+                    lambda x: type(x)
+                    == ray.rllib.connectors.agent.mean_std_filter.MeanStdObservationFilterAgentConnector,
+                    algo.agent_connectors.connectors,
+                )
+            )[0]
+
         else:
             use_policy = False
             algo = (
@@ -274,7 +282,8 @@ def experiment(args):
             elif algo_to_run == "PPO":
                 if use_policy:
                     actions[idx] = algo.compute_single_action(
-                        prep.transform(obs[idx]), # clip_actions=True
+                        c.filter(prep.transform(obs[idx])),  # clip_actions=True
+                        # prep.transform(obs[idx]),  # clip_actions=True
                     )[0]
                 else:
                     actions[idx] = algo.compute_single_action(

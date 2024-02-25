@@ -150,9 +150,9 @@ class RlMus(MultiAgentEnv):
                             shape=num_uav_state_shape,
                             dtype=np.float32,
                         ),
-                        "done_dt": spaces.Box(
-                            low=-np.inf, high=np.inf, shape=(1,), dtype=np.float32
-                        ),
+                        # "done_dt": spaces.Box(
+                        #     low=-np.inf, high=np.inf, shape=(1,), dtype=np.float32
+                        # ),
                         "target": spaces.Box(
                             low=-np.inf,
                             high=np.inf,
@@ -171,12 +171,18 @@ class RlMus(MultiAgentEnv):
                             shape=(1,),
                             dtype=np.float32,
                         ),
-                        "action_buffer": spaces.Box(
-                            low=self.action_low,
-                            high=self.action_high,
-                            shape=(action_buffer_size, self.num_actions),
-                            dtype=np.float32,
-                        ),
+                        # "los_angle": spaces.Box(
+                        #     low=-np.pi,
+                        #     high=np.pi,
+                        #     shape=(1,),
+                        #     dtype=np.float32
+                        # )
+                        # "action_buffer": spaces.Box(
+                        #     low=self.action_low,
+                        #     high=self.action_high,
+                        #     shape=(action_buffer_size, self.num_actions),
+                        #     dtype=np.float32,
+                        # ),
                         # "constraint": spaces.Box(
                         #     low=-np.inf,
                         #     high=np.inf,
@@ -596,6 +602,7 @@ class RlMus(MultiAgentEnv):
         target = self.targets[uav.target_id]
         uav.rel_target_dist = uav.rel_dist(target)
         uav.rel_target_vel = uav.rel_vel(target)
+        los_angle = uav.los_angle(target)
 
         # TODO: handle obstacles
         # closest_obstacles = self._get_closest_obstacles(uav)
@@ -606,10 +613,11 @@ class RlMus(MultiAgentEnv):
             "target": self.targets[uav.target_id].pos.astype(np.float32),
             "tgt_rel_dist": np.array([uav.rel_target_dist], dtype=np.float32),
             "tgt_rel_vel": np.array([uav.rel_target_vel], dtype=np.float32),
-            "done_dt": np.array(
-                [self.time_final - self._time_elapsed], dtype=np.float32
-            ),
-            "action_buffer": np.array(uav.action_buffer, dtype=np.float32),
+            # "los_angle": np.array([los_angle], dtype=np.float32),
+            # "done_dt": np.array(
+            #     [self.time_final - self._time_elapsed], dtype=np.float32
+            # ),
+            # "action_buffer": np.array(uav.action_buffer, dtype=np.float32),
             # "other_uav_obs": other_uav_states.reshape(-1).astype(np.float32),
             # TODO: handle obstacles
             # "obstacles": obstacles_to_add.astype(np.float32),

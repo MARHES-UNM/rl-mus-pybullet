@@ -856,8 +856,8 @@ class RlMus(MultiAgentEnv):
 
             # position must be good if here
             uav = Uav(
-                # pos,
-                [1, 1, 1],
+                pos,
+                # [1, 1, 1],
                 [0, 0, 0],
                 self._physics_client_id,
                 g=self.g,

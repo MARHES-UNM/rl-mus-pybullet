@@ -37,6 +37,8 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from rl_mus.envs.rl_mus import RlMus
 from gym_pybullet_drones.utils.utils import sync, str2bool
 from gymnasium.wrappers.flatten_observation import FlattenObservation
+from rl_mus.utils.env_utils import get_git_hash
+
 
 DEFAULT_GUI = True
 DEFAULT_RECORD_VIDEO = False
@@ -187,7 +189,8 @@ def run(
     """
 
     filename = os.path.join(
-        output_folder, "save-" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S")
+        output_folder,
+        "save-" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S") + "_" + get_git_hash(),
     )
     if not os.path.exists(filename):
         os.makedirs(filename + "/")

@@ -208,7 +208,7 @@ def run(
     eval_env = make_vec_env(RlMusTermWrapper, env_kwargs=dict(), n_envs=1, seed=1)
 
     eval_env = VecNormalize(
-        Monitor(eval_env, None, allow_early_resets=True), norm_obs=True
+        Monitor(eval_env, None, allow_early_resets=True), norm_obs=True, norm_reward=True
     )
 
     #### Check the environment's spaces ########################

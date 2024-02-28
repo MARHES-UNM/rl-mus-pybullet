@@ -112,7 +112,7 @@ def train(args):
             # create_env_on_local_worker=True,
             # rollout_fragment_length="auto",
             batch_mode="complete_episodes",
-            observation_filter="MeanStdFilter",  # or "NoFilter"
+            # observation_filter="MeanStdFilter",  # or "NoFilter"
         )
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
         .resources(

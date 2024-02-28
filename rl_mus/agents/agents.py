@@ -543,7 +543,8 @@ class Uav(Entity):
     @property
     def state(self):
         self._state = np.hstack(
-            [self.pos, self.quat, self.rpy, self.vel, self.ang_v, self.rpms]
+            # [self.pos, self.quat, self.rpy, self.vel, self.ang_v, self.rpms]
+            [self.pos, self.quat, self.rpy, self.vel, self.ang_v]
         ).reshape(
             -1,
         )

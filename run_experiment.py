@@ -14,6 +14,9 @@ from ray.tune.registry import get_trainable_cls
 from ray import air, tune
 from rl_mus.utils.callbacks import TrainCallback
 from ray.rllib.algorithms.callbacks import make_multi_callbacks
+from ray.rllib.algorithms.algorithm import Algorithm
+from ray.rllib.utils.policy import local_policy_inference
+
 import ray
 
 import os
@@ -180,7 +183,7 @@ def train(args):
 
     results = tuner.fit()
 
-    ray.shutdown()
+    # ray.shutdown()
 
 
 def test(args):
@@ -224,6 +227,9 @@ def experiment(args):
 
         # Reload the algorithm as is from training.
         if checkpoint is not None:
+            # can you algorithm from checkpoint instead
+            # algo = Algorithm.from_checkpoint(checkpoint)
+            # policy = algo.workers.local_worker().policy_map["shared_policy"]
             use_policy = True
             # use policy here instead of algorithm because it's more efficient
             from ray.rllib.policy.policy import Policy
@@ -232,15 +238,18 @@ def experiment(args):
             algo = Policy.from_checkpoint(checkpoint)
 
             env_obs_space, env_action_space = get_obs_act_space(env_config)
-            # need preprocesor here if using policy
-            # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
+            # # need preprocesor here if using policy
+            # # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
             prep = get_preprocessor(env_obs_space)(env_obs_space)
 
-            env = RlMus(env_config)
+            # https://github.com/ray-project/ray/issues/37974#issuecomment-1766994593
+            # TODO: look into issue not being able to use meanstdfilter during evaluation
             c = list(
                 filter(
                     lambda x: type(x)
                     == ray.rllib.connectors.agent.mean_std_filter.MeanStdObservationFilterAgentConnector,
+                    # algo.workers.local_worker()
+                    # .policy_map["shared_policy"]
                     algo.agent_connectors.connectors,
                 )
             )[0]
@@ -257,8 +266,9 @@ def experiment(args):
                 .build()
             )
 
-            env = algo.workers.local_worker().env
+            # env = algo.workers.local_worker().env
 
+    env = RlMus(env_config)
     env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
     for uav in env.uavs.values():
         env_logger.add_uav(uav.id)
@@ -281,6 +291,27 @@ def experiment(args):
                 actions[idx] = env.get_time_coord_action(env.uavs[idx])
             elif algo_to_run == "PPO":
                 if use_policy:
+
+                    # https://github.com/ray-project/ray/issues/41382
+                    # # Use local_policy_inference() to run inference, so we do not have to
+                    # # provide policy states or extra fetch dictionaries.
+                    # # "env_1" and "agent_1" are dummy env and agent IDs to run connectors with.
+                    # policy_outputs = local_policy_inference(
+                    #     policy, "env_1", "agent_1", obs[idx], #explore=False
+                    # )
+                    # assert len(policy_outputs) == 1
+                    # action, _, _ = policy_outputs[0]
+                    # print(f"step {time_step}", obs, action)
+
+                    # actions[idx] = action
+                    # actions[idx] = algo.compute_single_action(
+                    # c.filter(prep.transform(obs[idx])),  # clip_actions=True
+                    # c.filter(obs[idx]),
+                    # obs[idx],
+                    # policy_id="shared_policy",  # clip_actions=True
+                    # )
+                    # c = policy.agent_connectors.connectors[1]
+                    c = algo.agent_connectors.connectors[1]
                     actions[idx] = algo.compute_single_action(
                         c.filter(prep.transform(obs[idx])),  # clip_actions=True
                         # prep.transform(obs[idx]),  # clip_actions=True
@@ -317,10 +348,6 @@ def experiment(args):
             env_logger.log_eps_time(sim_time=env.time_elapsed, real_time=end_time)
             num_episodes += 1
 
-            if plot_results:
-                env_logger.plot_env()
-                env_logger.plot(plt_action=True, plt_target=True)
-
             if num_episodes == max_num_episodes:
                 break
 
@@ -333,6 +360,10 @@ def experiment(args):
             done["__all__"] = False
 
         time_step += 1
+
+    if plot_results:
+        env_logger.plot_env()
+        env_logger.plot(plt_action=True, plt_target=True)
 
     env.close()
 

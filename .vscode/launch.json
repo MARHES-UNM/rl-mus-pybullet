@@ -28,6 +28,8 @@
             "args": [
                 "test",
                 // "--write_exp",
+                "--checkpoint", 
+                "/home/prime/Documents/workspace/rl-mus-pybullet/results/train/PPO/rl-mus-v0_2024-02-27-18-32_ec9b0dc_1u_0o/norm_obs/norm_obs/PPO_rl-mus-v0_84814_00000_0_2024-02-27_18-32-48/checkpoint_000453/policies/shared_policy",
                 "--renders",
                 "--plot_results", 
                 "--seed", "None"

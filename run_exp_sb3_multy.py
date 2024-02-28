@@ -54,7 +54,7 @@ DEFAULT_MA = False
 
 # env_cfg = {"num_uavs": 1, "seed": 123}
 # env_cfg = {"num_uavs": 4, "renders": True}
-env_cfg = {"num_uavs": 1, "renders": False, "seed": 123}
+env_cfg = {"num_uavs": 4, "renders": False, "seed": 123}
 from gymnasium import spaces
 
 

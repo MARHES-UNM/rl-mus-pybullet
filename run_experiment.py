@@ -242,17 +242,18 @@ def experiment(args):
             # # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
             prep = get_preprocessor(env_obs_space)(env_obs_space)
 
-            # https://github.com/ray-project/ray/issues/37974#issuecomment-1766994593
-            # TODO: look into issue not being able to use meanstdfilter during evaluation
-            c = list(
-                filter(
-                    lambda x: type(x)
-                    == ray.rllib.connectors.agent.mean_std_filter.MeanStdObservationFilterAgentConnector,
-                    # algo.workers.local_worker()
-                    # .policy_map["shared_policy"]
-                    algo.agent_connectors.connectors,
-                )
-            )[0]
+            # # https://github.com/ray-project/ray/issues/37974#issuecomment-1766994593
+            # # TODO: look into issue not being able to use meanstdfilter during evaluation
+            # c = list(
+            #     filter(
+            #         lambda x: type(x)
+            #         == ray.rllib.connectors.agent.mean_std_filter.MeanStdObservationFilterAgentConnector,
+            #         # algo.workers.local_worker()
+            #         # .policy_map["shared_policy"]
+            #         algo.agent_connectors.connectors,
+            #     )
+            # )[0]
+            env = RlMus(env_config)
 
         else:
             use_policy = False
@@ -266,9 +267,8 @@ def experiment(args):
                 .build()
             )
 
-            # env = algo.workers.local_worker().env
+            env = algo.workers.local_worker().env
 
-    env = RlMus(env_config)
     env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
     for uav in env.uavs.values():
         env_logger.add_uav(uav.id)
@@ -311,10 +311,10 @@ def experiment(args):
                     # policy_id="shared_policy",  # clip_actions=True
                     # )
                     # c = policy.agent_connectors.connectors[1]
-                    c = algo.agent_connectors.connectors[1]
+                    # c = algo.agent_connectors.connectors[1]
                     actions[idx] = algo.compute_single_action(
-                        c.filter(prep.transform(obs[idx])),  # clip_actions=True
-                        # prep.transform(obs[idx]),  # clip_actions=True
+                        # c.filter(prep.transform(obs[idx])),  # clip_actions=True
+                        prep.transform(obs[idx]),  # clip_actions=True
                     )[0]
                 else:
                     actions[idx] = algo.compute_single_action(

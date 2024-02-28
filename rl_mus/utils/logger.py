@@ -127,17 +127,17 @@ class UavLogger(BaseLogger):
         self.plot_uav_data(row, col, 15, ylabel="q (rad/s)")
 
         # RPMS
-        col = 0
-        row = 6
-        self.plot_uav_data(row, col, 16, ylabel="RPM0")
-        row = 7
-        self.plot_uav_data(row, col, 17, ylabel="RPM1")
+        # col = 0
+        # row = 6
+        # self.plot_uav_data(row, col, 16, ylabel="RPM0")
+        # row = 7
+        # self.plot_uav_data(row, col, 17, ylabel="RPM1")
 
-        col = 1
-        row = 6
-        self.plot_uav_data(row, col, 18, ylabel="RPM2")
-        row = 7
-        self.plot_uav_data(row, col, 19, ylabel="RPM3")
+        # col = 1
+        # row = 6
+        # self.plot_uav_data(row, col, 18, ylabel="RPM2")
+        # row = 7
+        # self.plot_uav_data(row, col, 19, ylabel="RPM3")
 
         if plt_action:
             if self.ctrl_type == UavCtrlType.VEL:

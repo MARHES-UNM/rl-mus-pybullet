@@ -683,7 +683,7 @@ class RlMus(MultiAgentEnv):
             uav.truncated = True
             uav.done = True
             uav.crashed = True
-            reward += -100
+            reward += -self._crash_penalty
             return reward
 
         # if uav.pos[2] <= 0.02:

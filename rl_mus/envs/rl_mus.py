@@ -680,6 +680,7 @@ class RlMus(MultiAgentEnv):
         ):
             uav.truncated = True
             uav.done = True
+            uav.crashed = True
             reward += -100
             return reward
 
@@ -879,22 +880,22 @@ class RlMus(MultiAgentEnv):
         )
         # Reset Target
         for idx, uav in enumerate(self.uavs.values()):
-            in_collision = True
+            # in_collision = True
 
-            while in_collision:
-                pos = self.get_random_pos(low_h=self._z_low, z_high=self._z_high)
+            # while in_collision:
+            #     pos = self.get_random_pos(low_h=self._z_low, z_high=self._z_high)
 
-                in_collision = self.is_in_collision(entity=None, pos=pos, rad=0.1)
+            #     in_collision = self.is_in_collision(entity=None, pos=pos, rad=0.1)
 
-            target = Target(pos, self._physics_client_id, g=self.g)
-            # position must be good if here
-            self.targets[target.id] = target
-            uav.target_id = target.id
-
-            # target = Target(target_pos[idx], self._physics_client_id, g=self.g)
+            # target = Target(pos, self._physics_client_id, g=self.g)
             # # position must be good if here
             # self.targets[target.id] = target
             # uav.target_id = target.id
+
+            target = Target(target_pos[idx], self._physics_client_id, g=self.g)
+            # position must be good if here
+            self.targets[target.id] = target
+            uav.target_id = target.id
 
         # # Reset obstacles, obstacles should not be in collision with target. Obstacles can be in collision with each other.
         # self.obstacles = []

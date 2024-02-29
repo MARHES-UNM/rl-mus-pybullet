@@ -53,8 +53,9 @@ DEFAULT_AGENTS = 2
 DEFAULT_MA = False
 
 # env_cfg = {"num_uavs": 1, "seed": 123}
+env_cfg = {"num_uavs": 4, "renders": True}
 # env_cfg = {"num_uavs": 4, "renders": True}
-env_cfg = {"num_uavs": 4, "renders": False, "seed": 123}
+# env_cfg = {"num_uavs": 4, "renders": False, "seed": 123}
 from gymnasium import spaces
 
 
@@ -138,24 +139,24 @@ class RlMusTermWrapper(gym.Wrapper):
         return obs, rew, term, trunc, info
 
 
-env = RlMusTermWrapper(RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg)))))
+# env = RlMusTermWrapper(RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg)))))
 
-from stable_baselines3.common.env_checker import check_env
+# from stable_baselines3.common.env_checker import check_env
 
-# It will check your custom environment and output additional warnings if needed
-check_env(env)
+# # It will check your custom environment and output additional warnings if needed
+# check_env(env)
 
 
-obs, info = env.reset()
+# obs, info = env.reset()
 
-for i in range(100):
-    action = env.action_space.sample()
+# for i in range(100):
+#     action = env.action_space.sample()
 
-    obs, rew, terminated, truncated, info = env.step(action)
+#     obs, rew, terminated, truncated, info = env.step(action)
 
-    print(action)
+#     print(action)
 
-env.close()
+# env.close()
 
 
 def get_env(env_cfg):
@@ -185,190 +186,205 @@ def run(
         local (bool, optional): _description_. Defaults to True.
     """
 
-    filename = os.path.join(
-        output_folder,
-        "save-" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S") + "_" + get_git_hash(),
-    )
-    if not os.path.exists(filename):
-        os.makedirs(filename + "/")
+    # filename = os.path.join(
+    #     output_folder,
+    #     "save-" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S") + "_" + get_git_hash(),
+    # )
+    # if not os.path.exists(filename):
+    #     os.makedirs(filename + "/")
 
-    train_env = make_vec_env(
-        lambda: RlMusTermWrapper(
-            RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
-        ),
-        # get_env,
-        env_kwargs=dict(),
-        n_envs=16,
-        seed=0,
-    )
-
-    train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
-
-    eval_env = make_vec_env(
-        lambda: RlMusTermWrapper(
-            RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
-        ),
-        env_kwargs=dict(),
-        n_envs=1,
-        seed=1,
-    )
-
-    eval_env = VecNormalize(
-        Monitor(eval_env, None, allow_early_resets=True),
-        norm_obs=True,
-        norm_reward=True,
-    )
-
-    #### Check the environment's spaces ########################
-    print("[INFO] Action space:", train_env.action_space)
-    print("[INFO] Observation space:", train_env.observation_space)
-
-    #### Train the model #######################################
-    model = PPO(
-        "MlpPolicy",
-        train_env,
-        tensorboard_log=filename + "/tb/",
-        verbose=1,
-    )
-
-    #### Target cumulative rewards (problem-dependent) ##########
-    target_reward = 8000
-    callback_on_best = StopTrainingOnRewardThreshold(
-        reward_threshold=target_reward, verbose=1
-    )
-    eval_callback = EvalCallback(
-        eval_env,
-        callback_on_new_best=callback_on_best,
-        verbose=1,
-        best_model_save_path=filename + "/",
-        log_path=filename + "/",
-        eval_freq=int(1000),
-        # n_eval_episodes=5,
-        deterministic=True,
-        render=False,
-    )
-    model.learn(
-        total_timesteps=(
-            int(3e7) if local else int(1e2)
-        ),  # shorter training in GitHub Actions pytest
-        callback=eval_callback,
-        log_interval=100,
-    )
-
-    #### Save the model ########################################
-    model.save(filename + "/final_model.zip")
-    print(filename)
-    # saving VecNormalize statistics
-    train_env.save(filename + "/vec_normalize.pkl")
-
-    #### Print training progression ############################
-    with np.load(filename + "/evaluations.npz") as data:
-        for j in range(data["timesteps"].shape[0]):
-            print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
-
-    ############################################################
-    ############################################################
-    ############################################################
-    ############################################################
-    ############################################################
-
-
-    # if local:
-    #     input("Press Enter to continue...")
-
-    # filename = r"/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_01.14.02_4f261a6"
-    # if os.path.isfile(filename + "/final_model.zip"):
-    #     path = filename + "/final_model.zip"
-    # if os.path.isfile(filename + "/best_model.zip"):
-    #     path = filename + "/best_model.zip"
-    # else:
-    #     print("[ERROR]: no model under the specified path", filename)
-    # model = PPO.load(path)
-
-    # # #### Show (and record a video of) the model's performance ##
-    # # test_env = HoverAviary(gui=gui,
-    # #                            obs=DEFAULT_OBS,
-    # #                            act=DEFAULT_ACT,
-    # #                            record=record_video)
-    # # test_env_nogui = RlMusRewWrapper()
-
-    # # logger = Logger(logging_freq_hz=int(test_env.CTRL_FREQ),
-    # #             num_drones=DEFAULT_AGENTS if multiagent else 1,
-    # #             output_folder=output_folder,
-    # #             colab=colab
-    # #             )
-
-    # # test_env_nogui = VecNormalize.load()
-    # # mean_reward, std_reward = evaluate_policy(model,
-    # #                                           test_env_nogui,
-    # #                                           n_eval_episodes=10
-    # #                                           )
-    # # print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
-    # env_cfg = {"num_uavs": 1, "renders": True}
-    # # test_env = RlMusTermWrapper()
-
-    # test_env = make_vec_env(
-    #     RlMusTermWrapper,
+    # train_env = make_vec_env(
+    #     lambda: RlMusTermWrapper(
+    #         RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
+    #     ),
+    #     # get_env,
     #     env_kwargs=dict(),
-    #     #  env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
-    #     n_envs=1,
+    #     n_envs=16,
     #     seed=0,
     # )
 
-    # # # Load the saved statistics
-    # # env = make_vec_env(
-    # #     "HalfCheetahBulletEnv-v0",
-    # #     env_kwargs=dict(apply_api_compatibility=True),
-    # #     n_envs=1,
-    # # )
+    # train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
 
-    # with open(
-    #     r"/home/prime/Documents/workspace/rl-mus-pybullet/configs/sim_config.cfg", "rt"
-    # ) as f:
-    #     config = json.load(f)
-    # log_config = config["logger_config"]
-    # # env_logger = EnvLogger(num_uavs=1, log_config=log_config)
-    # # for uav in env.uavs.values():
-    # # env_logger.add_uav(0)
+    # eval_env = make_vec_env(
+    #     lambda: RlMusTermWrapper(
+    #         RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
+    #     ),
+    #     env_kwargs=dict(),
+    #     n_envs=1,
+    #     seed=1,
+    # )
+
+    # eval_env = VecNormalize(
+    #     Monitor(eval_env, None, allow_early_resets=True),
+    #     norm_obs=True,
+    #     norm_reward=True,
+    # )
+
+    # #### Check the environment's spaces ########################
+    # print("[INFO] Action space:", train_env.action_space)
+    # print("[INFO] Observation space:", train_env.observation_space)
+
+    # #### Train the model #######################################
+    # model = PPO(
+    #     "MlpPolicy",
+    #     train_env,
+    #     tensorboard_log=filename + "/tb/",
+    #     verbose=1,
+    # )
+
+    # #### Target cumulative rewards (problem-dependent) ##########
+    # target_reward = 8000
+    # callback_on_best = StopTrainingOnRewardThreshold(
+    #     reward_threshold=target_reward, verbose=1
+    # )
+    # eval_callback = EvalCallback(
+    #     eval_env,
+    #     callback_on_new_best=callback_on_best,
+    #     verbose=1,
+    #     best_model_save_path=filename + "/",
+    #     log_path=filename + "/",
+    #     eval_freq=int(1000),
+    #     # n_eval_episodes=5,
+    #     deterministic=True,
+    #     render=False,
+    # )
+    # model.learn(
+    #     total_timesteps=(
+    #         int(3e7) if local else int(1e2)
+    #     ),  # shorter training in GitHub Actions pytest
+    #     callback=eval_callback,
+    #     log_interval=100,
+    # )
+
+    # #### Save the model ########################################
+    # model.save(filename + "/final_model.zip")
+    # print(filename)
+    # # saving VecNormalize statistics
+    # train_env.save(filename + "/vec_normalize.pkl")
+
+    # #### Print training progression ############################
+    # with np.load(filename + "/evaluations.npz") as data:
+    #     for j in range(data["timesteps"].shape[0]):
+    #         print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
+
+    # ############################################################
+    # ############################################################
+    # ############################################################
+    # ############################################################
+    # ############################################################
+
+    if local:
+        input("Press Enter to continue...")
+
+    filename = r"/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_01.14.02_4f261a6"
+    filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_23.17.45_a4d28b3'
+    filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_23.19.39_1d5a3d3'
+    # filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_01.14.02_4f261a6'
+    if os.path.isfile(filename + "/final_model.zip"):
+        path = filename + "/final_model.zip"
+    if os.path.isfile(filename + "/best_model.zip"):
+        path = filename + "/best_model.zip"
+    else:
+        print("[ERROR]: no model under the specified path", filename)
+    model = PPO.load(path)
+
+    # #### Show (and record a video of) the model's performance ##
+    # test_env = HoverAviary(gui=gui,
+    #                            obs=DEFAULT_OBS,
+    #                            act=DEFAULT_ACT,
+    #                            record=record_video)
+    # test_env_nogui = RlMusRewWrapper()
+
+    # logger = Logger(logging_freq_hz=int(test_env.CTRL_FREQ),
+    #             num_drones=DEFAULT_AGENTS if multiagent else 1,
+    #             output_folder=output_folder,
+    #             colab=colab
+    #             )
+
+    # test_env_nogui = VecNormalize.load()
+    # mean_reward, std_reward = evaluate_policy(model,
+    #                                           test_env_nogui,
+    #                                           n_eval_episodes=10
+    #                                           )
+    # print("\n\n\nMean reward ", mean_reward, " +- ", std_reward, "\n\n")
+    # env_cfg = {"num_uavs": 1, "renders": True}
+    # test_env = RlMusTermWrapper()
+    # train_env = make_vec_env(
+    #     lambda: RlMusTermWrapper(
+    #         RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
+    #     ),
+    #     # get_env,
+    #     env_kwargs=dict(),
+    #     n_envs=16,
+    #     seed=0,
+    # )
+    test_env = make_vec_env(
+        lambda: RlMusTermWrapper(
+            RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
+        ),
+        env_kwargs=dict(),
+        #  env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
+        n_envs=1,
+        seed=0,
+    )
+
+    # test_env = VecNormalize(test_env, norm_obs=True, norm_reward=True)
+    # # Load the saved statistics
+    # env = make_vec_env(
+    #     "HalfCheetahBulletEnv-v0",
+    #     env_kwargs=dict(apply_api_compatibility=True),
+    #     n_envs=1,
+    # )
+
+    with open(
+        r"/home/prime/Documents/workspace/rl-mus-pybullet/configs/sim_config.cfg", "rt"
+    ) as f:
+        config = json.load(f)
+    log_config = config["logger_config"]
+    # env_logger = EnvLogger(num_uavs=1, log_config=log_config)
+    # for uav in env.uavs.values():
+    # env_logger.add_uav(0)
     # stats_path = filename + "/vec_normalize.pkl"
     # test_env = VecNormalize.load(stats_path, test_env)
-    # #  do not update them at test time
+    # # #  do not update them at test time
     # test_env.training = False
-    # # reward normalization is not needed at test time
+    # # # reward normalization is not needed at test time
     # test_env.norm_reward = False
 
-    # # obs, info = test_env.reset(seed=42, options={})
-    # # obs, info = test_env.reset()
-    # obs = test_env.reset()
-    # start = time.time()
-    # for i in range(1000):
-    #     action, _states = model.predict(obs, deterministic=True)
-    #     # obs, reward, terminated, truncated, info = test_env.step(action)
-    #     obs, reward, terminated, info = test_env.step(action)
-    #     # env_logger.log(
-    #     #     eps_num=0, info=info, obs={0: obs}, reward={0: reward}, action={0: action}
-    #     # )
-    #     test_env.render()
-    #     # sync(i, start, 1 / test_envenv_freq)
-    #     if terminated:
-    #         print(
-    #             "Obs:",
-    #             obs,
-    #             "\tAction",
-    #             action,
-    #             "\tReward:",
-    #             reward,
-    #             "\tTerminated:",
-    #             terminated,
-    #             # "\tTruncated:",
-    #             # truncated,
-    #         )
-    #         # env_logger.plot_env()
-    #         # env_logger.plot(plt_action=True, plt_target=True)
-    #         # obs, info = test_env.reset()
-    #         obs = test_env.reset()
-    #         # break
-    # test_env.close()
+    # obs, info = test_env.reset(seed=42, options={})
+    # obs, info = test_env.reset()
+    obs = test_env.reset()
+    start = time.time()
+    for i in range(1000):
+        action, _states = model.predict(obs, deterministic=True)
+        # obs, reward, terminated, truncated, info = test_env.step(action)
+        obs, reward, terminated, info = test_env.step(action)
+        # env_logger.log(
+        #     eps_num=0, info=info, obs={0: obs}, reward={0: reward}, action={0: action}
+        # )
+        test_env.render()
+        # sync(i, start, 1 / test_envenv_freq)
+        if terminated:
+            # print(
+            #     "Obs:",
+            #     obs,
+            #     "\tAction",
+            #     action,
+            #     "\tReward:",
+            #     reward,
+            #     "\tTerminated:",
+            #     terminated,
+            #     # "\tTruncated:",
+            #     # truncated,
+            # )
+            print(info)
+            # env_logger.plot_env()
+            # env_logger.plot(plt_action=True, plt_target=True)
+            # obs, info = test_env.reset()
+
+            obs = test_env.reset()
+            # break
+    test_env.close()
 
 
 if __name__ == "__main__":

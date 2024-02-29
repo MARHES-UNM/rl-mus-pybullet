@@ -347,7 +347,6 @@ def experiment(args):
             logger.info(f"time_elapsed: {env.time_elapsed}")
             env_logger.log_eps_time(sim_time=env.time_elapsed, real_time=end_time)
             num_episodes += 1
-
             if num_episodes == max_num_episodes:
                 break
 
@@ -479,8 +478,9 @@ def main():
         args.log_dir = f"./results/{args.func.__name__}/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}_{num_uavs}u_{num_obs}o/{args.name}"
 
     args.log_dir = Path(args.log_dir).resolve()
-    if not args.log_dir.exists():
-        args.log_dir.mkdir(parents=True, exist_ok=True)
+    # TODO: create log dir when running experiments
+    # if not args.log_dir.exists():
+    #     args.log_dir.mkdir(parents=True, exist_ok=True)
 
     args.func(args)
 

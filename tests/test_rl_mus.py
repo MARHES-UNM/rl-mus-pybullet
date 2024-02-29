@@ -253,7 +253,7 @@ class TestRlMus(unittest.TestCase):
                 "num_uavs": 1,
                 "renders": True,
                 # "pybullet_freq": 240,
-                # "env_freq": 30,
+                "env_freq": 48,
             }
         )
         log_config = {
@@ -326,6 +326,7 @@ class TestRlMus(unittest.TestCase):
                 "renders": True,
                 # "pybullet_freq": 240,
                 # "sim_dt": 1/48
+                "env_freq": 48,
             }
         )
         log_config = {
@@ -1166,7 +1167,7 @@ def suite():
     # suite.addTest(TestRlMus("test_termination"))
     # # suite.addTest(TestRlMus("test_uav_go_to_goal"))
     # # suite.addTest(TestRlMus("test_uav_vel_control"))
-    # suite.addTest(TestRlMus("test_uav_apf_vel_control"))
+    suite.addTest(TestRlMus("test_uav_apf_vel_control"))
     suite.addTest(TestRlMus("test_uav_apf_vel_control_single"))
 
     return suite

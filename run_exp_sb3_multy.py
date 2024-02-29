@@ -139,24 +139,24 @@ class RlMusTermWrapper(gym.Wrapper):
         return obs, rew, term, trunc, info
 
 
-# env = RlMusTermWrapper(RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg)))))
+env = RlMusTermWrapper(RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg)))))
 
-# from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.env_checker import check_env
 
-# # It will check your custom environment and output additional warnings if needed
-# check_env(env)
+# It will check your custom environment and output additional warnings if needed
+check_env(env)
 
 
-# obs, info = env.reset()
+obs, info = env.reset()
 
-# for i in range(100):
-#     action = env.action_space.sample()
+for i in range(100):
+    action = env.action_space.sample()
 
-#     obs, rew, terminated, truncated, info = env.step(action)
+    obs, rew, terminated, truncated, info = env.step(action)
 
-#     print(action)
+    print(action)
 
-# env.close()
+env.close()
 
 
 def get_env(env_cfg):
@@ -284,6 +284,7 @@ def run(
     filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_23.17.45_a4d28b3'
     filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_23.19.39_1d5a3d3'
     # filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_01.14.02_4f261a6'
+    filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.28.2024_22.19.01_7b15a57'
     if os.path.isfile(filename + "/final_model.zip"):
         path = filename + "/final_model.zip"
     if os.path.isfile(filename + "/best_model.zip"):
@@ -348,12 +349,12 @@ def run(
     # env_logger = EnvLogger(num_uavs=1, log_config=log_config)
     # for uav in env.uavs.values():
     # env_logger.add_uav(0)
-    # stats_path = filename + "/vec_normalize.pkl"
-    # test_env = VecNormalize.load(stats_path, test_env)
-    # # #  do not update them at test time
-    # test_env.training = False
-    # # # reward normalization is not needed at test time
-    # test_env.norm_reward = False
+    stats_path = filename + "/vec_normalize.pkl"
+    test_env = VecNormalize.load(stats_path, test_env)
+    # #  do not update them at test time
+    test_env.training = False
+    # # reward normalization is not needed at test time
+    test_env.norm_reward = False
 
     # obs, info = test_env.reset(seed=42, options={})
     # obs, info = test_env.reset()

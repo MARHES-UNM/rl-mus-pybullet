@@ -53,9 +53,9 @@ DEFAULT_AGENTS = 2
 DEFAULT_MA = False
 
 # env_cfg = {"num_uavs": 1, "seed": 123}
-env_cfg = {"num_uavs": 4, "renders": True}
 # env_cfg = {"num_uavs": 4, "renders": True}
-# env_cfg = {"num_uavs": 4, "renders": False, "seed": 123}
+# env_cfg = {"num_uavs": 4, "renders": True}
+env_cfg = {"num_uavs": 1, "renders": False, "seed": 123}
 from gymnasium import spaces
 
 
@@ -228,10 +228,10 @@ def run(
     model = PPO(
         "MlpPolicy",
         train_env,
-        learning_rate=5e-5,
-        n_steps=65536,
-        batch_size=4096,
-        n_epochs=32,
+        # learning_rate=5e-5,
+        # n_steps=65536,
+        # batch_size=4096,
+        # n_epochs=32,
         tensorboard_log=filename + "/tb/",
         verbose=1,
     )

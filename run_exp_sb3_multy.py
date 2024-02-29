@@ -186,92 +186,96 @@ def run(
         local (bool, optional): _description_. Defaults to True.
     """
 
-    # filename = os.path.join(
-    #     output_folder,
-    #     "save-" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S") + "_" + get_git_hash(),
-    # )
-    # if not os.path.exists(filename):
-    #     os.makedirs(filename + "/")
+    filename = os.path.join(
+        output_folder,
+        "save-" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S") + "_" + get_git_hash(),
+    )
+    if not os.path.exists(filename):
+        os.makedirs(filename + "/")
 
-    # train_env = make_vec_env(
-    #     lambda: RlMusTermWrapper(
-    #         RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
-    #     ),
-    #     # get_env,
-    #     env_kwargs=dict(),
-    #     n_envs=16,
-    #     seed=0,
-    # )
+    train_env = make_vec_env(
+        lambda: RlMusTermWrapper(
+            RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
+        ),
+        # get_env,
+        env_kwargs=dict(),
+        n_envs=16,
+        seed=0,
+    )
 
-    # train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
+    train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
 
-    # eval_env = make_vec_env(
-    #     lambda: RlMusTermWrapper(
-    #         RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
-    #     ),
-    #     env_kwargs=dict(),
-    #     n_envs=1,
-    #     seed=1,
-    # )
+    eval_env = make_vec_env(
+        lambda: RlMusTermWrapper(
+            RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
+        ),
+        env_kwargs=dict(),
+        n_envs=1,
+        seed=1,
+    )
 
-    # eval_env = VecNormalize(
-    #     Monitor(eval_env, None, allow_early_resets=True),
-    #     norm_obs=True,
-    #     norm_reward=True,
-    # )
+    eval_env = VecNormalize(
+        Monitor(eval_env, None, allow_early_resets=True),
+        norm_obs=True,
+        norm_reward=True,
+    )
 
-    # #### Check the environment's spaces ########################
-    # print("[INFO] Action space:", train_env.action_space)
-    # print("[INFO] Observation space:", train_env.observation_space)
+    #### Check the environment's spaces ########################
+    print("[INFO] Action space:", train_env.action_space)
+    print("[INFO] Observation space:", train_env.observation_space)
 
-    # #### Train the model #######################################
-    # model = PPO(
-    #     "MlpPolicy",
-    #     train_env,
-    #     tensorboard_log=filename + "/tb/",
-    #     verbose=1,
-    # )
+    #### Train the model #######################################
+    model = PPO(
+        "MlpPolicy",
+        train_env,
+        learning_rate=5e-5,
+        n_steps=65536,
+        batch_size=4096,
+        n_epochs=32,
+        tensorboard_log=filename + "/tb/",
+        verbose=1,
+    )
 
-    # #### Target cumulative rewards (problem-dependent) ##########
-    # target_reward = 8000
-    # callback_on_best = StopTrainingOnRewardThreshold(
-    #     reward_threshold=target_reward, verbose=1
-    # )
-    # eval_callback = EvalCallback(
-    #     eval_env,
-    #     callback_on_new_best=callback_on_best,
-    #     verbose=1,
-    #     best_model_save_path=filename + "/",
-    #     log_path=filename + "/",
-    #     eval_freq=int(1000),
-    #     # n_eval_episodes=5,
-    #     deterministic=True,
-    #     render=False,
-    # )
-    # model.learn(
-    #     total_timesteps=(
-    #         int(3e7) if local else int(1e2)
-    #     ),  # shorter training in GitHub Actions pytest
-    #     callback=eval_callback,
-    #     log_interval=100,
-    # )
+    #### Target cumulative rewards (problem-dependent) ##########
+    target_reward = 8000
+    callback_on_best = StopTrainingOnRewardThreshold(
+        reward_threshold=target_reward, verbose=1
+    )
+    eval_callback = EvalCallback(
+        eval_env,
+        callback_on_new_best=callback_on_best,
+        verbose=1,
+        best_model_save_path=filename + "/",
+        log_path=filename + "/",
+        eval_freq=int(1000),
+        # n_eval_episodes=5,
+        deterministic=True,
+        render=False,
+    )
+    model.learn(
+        total_timesteps=(
+            int(1e7) if local else int(1e2)
+        ),  # shorter training in GitHub Actions pytest
+        callback=eval_callback,
+        log_interval=100,
+    )
 
-    # #### Save the model ########################################
-    # model.save(filename + "/final_model.zip")
-    # print(filename)
-    # # saving VecNormalize statistics
-    # train_env.save(filename + "/vec_normalize.pkl")
+    #### Save the model ########################################
+    model.save(filename + "/final_model.zip")
+    print(filename)
+    # saving VecNormalize statistics
+    train_env.save(filename + "/vec_normalize.pkl")
 
-    # #### Print training progression ############################
-    # with np.load(filename + "/evaluations.npz") as data:
-    #     for j in range(data["timesteps"].shape[0]):
-    #         print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
+    #### Print training progression ############################
+    with np.load(filename + "/evaluations.npz") as data:
+        for j in range(data["timesteps"].shape[0]):
+            print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
 
-    # ############################################################
-    # ############################################################
-    # ############################################################
-    # ############################################################
-    # ############################################################
+    ############################################################
+    ############################################################
+    ############################################################
+    ############################################################
+    ############################################################
 
     if local:
         input("Press Enter to continue...")

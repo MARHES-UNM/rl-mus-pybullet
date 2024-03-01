@@ -92,7 +92,7 @@ def train(args):
     # args.local_mode = True
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
-    # we get the spaces here before test vary the experiment treatments (factors)
+    # We get the spaces here before test vary the experiment treatments (factors)
     env_obs_space, env_action_space = get_obs_act_space(args.config["env_config"])
 
     # Vary treatments here
@@ -101,11 +101,10 @@ def train(args):
     args.config["env_config"]["target_pos_rand"] = tune.grid_search([False, True])
     args.config["env_config"]["crash_penalty"] = tune.grid_search([10])
     obs_filter = tune.grid_search(["NoFilter", "MeanStdFilter"])
-    # obs_filter=tune.grid_search(["NoFilter", "MeanStdFilter"])
 
     callback_list = [TrainCallback]
     # multi_callbacks = make_multi_callbacks(callback_list)
-    # info on common configs: https://docs.ray.io/en/latest/rllib/rllib-training.html#specifying-rollout-workers
+    # Common config params: https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms
     train_config = (
         get_algo_config(args.config, env_obs_space, env_action_space).rollouts(
             num_rollout_workers=(
@@ -313,14 +312,13 @@ def experiment(args):
                     # c = policy.agent_connectors.connectors[1]
                     c = algo.agent_connectors.connectors[1]
                     actions[idx] = algo.compute_single_action(
-                        c.filter(prep.transform(obs[idx])),
+                        # c.filter(prep.transform(obs[idx])),
+                        prep.transform(obs[idx]),
                         clip_actions=True,
-                        # prep.transform(obs[idx]),   clip_actions=True
                     )[0]
                 else:
                     actions[idx] = algo.compute_single_action(
-                        obs[idx],
-                        policy_id="shared_policy",  # clip_actions=True
+                        obs[idx], policy_id="shared_policy", clip_actions=True
                     )
 
             if exp_config["exp_config"]["safe_action_type"] is not None:

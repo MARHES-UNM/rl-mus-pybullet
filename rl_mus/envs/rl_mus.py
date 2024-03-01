@@ -29,6 +29,7 @@ class RlMus(MultiAgentEnv):
         self._seed = env_config.setdefault("seed", None)
         self.render_mode = env_config.setdefault("render_mode", "human")
         self.num_uavs = env_config.setdefault("num_uavs", 1)
+        self.max_num_uavs = env_config.setdefault("num_uavs", 4)
         self.gamma = env_config.setdefault("gamma", 1)
         self.num_obstacles = env_config.setdefault("num_obstacles", 0)
         self.obstacle_radius = env_config.setdefault("obstacle_radius", 1)

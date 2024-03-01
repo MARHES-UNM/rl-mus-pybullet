@@ -8,6 +8,7 @@ from rl_mus.envs.rl_mus import RlMus
 from pathlib import Path
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
+from rl_mus.envs.rl_mus_ttc import RlMusTtc
 from rl_mus.utils.env_utils import get_git_hash
 from rl_mus.utils.logger import EnvLogger
 from ray.tune.registry import get_trainable_cls
@@ -42,12 +43,17 @@ def setup_stream(logging_level=logging.DEBUG):
     logger.setLevel(logging_level)
 
 
-def get_obs_act_space(env_config):
+def get_obs_act_space(config):
 
     # Need to create a temporary environment to get obs and action space
+    env_config = config["env_config"]
     renders = env_config["renders"]
     env_config["renders"] = False
-    temp_env = RlMus(env_config)
+    if config['env_name'] == 'rl-mus-v0':
+        temp_env = RlMus(env_config)
+    else:
+        temp_env = RlMusTtc(env_config)
+
     env_obs_space = temp_env.observation_space[0]
     env_action_space = temp_env.action_space[0]
     temp_env.close()
@@ -93,15 +99,22 @@ def train(args):
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
     # We get the spaces here before test vary the experiment treatments (factors)
-    env_obs_space, env_action_space = get_obs_act_space(args.config["env_config"])
+    env_obs_space, env_action_space = get_obs_act_space(args.config)
 
     # Vary treatments here
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
     args.config["env_config"]["num_uavs"] = tune.grid_search([1, 4])
-    args.config["env_config"]["target_pos_rand"] = tune.grid_search([False, True])
-    args.config["env_config"]["crash_penalty"] = tune.grid_search([10])
-    obs_filter = tune.grid_search(["NoFilter", "MeanStdFilter"])
+    # args.config["env_config"]["target_pos_rand"] = tune.grid_search([False])
+    # args.config["env_config"]["crash_penalty"] = tune.grid_search([10])
+    # args.config["env_config"]["use_safe_action"] = tune.grid_search([False])
 
+    args.config["env_config"]["tgt_reward"] = 100
+    args.config["env_config"]["stp_penalty"] = tune.grid_search([5])
+    args.config["env_config"]["beta"] = 0.3
+    args.config["env_config"]["d_thresh"] = 0.15
+    args.config["env_config"]["t_go_max"] = 2.0
+
+    obs_filter = "NoFilter"
     callback_list = [TrainCallback]
     # multi_callbacks = make_multi_callbacks(callback_list)
     # Common config params: https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms
@@ -223,7 +236,7 @@ def experiment(args):
 
     if algo_to_run == "PPO":
         checkpoint = exp_config["exp_config"].setdefault("checkpoint", None)
-        env_obs_space, env_action_space = get_obs_act_space(env_config)
+        env_obs_space, env_action_space = get_obs_act_space(args.config)
 
         # Reload the algorithm as is from training.
         if checkpoint is not None:

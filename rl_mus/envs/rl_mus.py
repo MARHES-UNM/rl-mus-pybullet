@@ -75,6 +75,8 @@ class RlMus(MultiAgentEnv):
         self._pyb_freq = env_config.setdefault("pybullet_freq", 240)
         self._env_freq = env_config.setdefault("env_freq", 30)
         self._sim_dt = 1 / self._env_freq
+        self._target_pos_rand = env_config.setdefault("target_pos_rand", True)
+        self._target_pos = env_config.setdefault("target_pos", [[2, 2, 0.5], [1.5, 2, 0.5], [2, 1.5, 0.5], [1.5, 1.5, 0.5]])
 
         # save the configuration
         self.env_config = env_config
@@ -853,15 +855,12 @@ class RlMus(MultiAgentEnv):
             # position must be good if here
             uav = Uav(
                 pos,
-                # [1, 1, 1],
                 [0, 0, 0],
                 self._physics_client_id,
                 g=self.g,
                 ctrl_type=self.uav_ctrl_type,
                 pyb_freq=self._pyb_freq,
-                # ctrl_freq=1 / (self._pyb_dt * self._sim_steps),
                 ctrl_freq=self._env_freq,
-                # ctrl_freq=self._pyb_freq,
             )
             if self.first_uav_id is None:
                 self.first_uav_id = uav.id
@@ -870,27 +869,26 @@ class RlMus(MultiAgentEnv):
 
             self.uavs[uav.id] = uav
 
-        target_pos = np.array(
-            [[0, 0, 1], [1.5, 2, 0.5], [2, 1.5, 0.5], [1.5, 1.5, 0.5]]
-        )
         # Reset Target
         for idx, uav in enumerate(self.uavs.values()):
-            # in_collision = True
+            if self._target_pos_rand:
+                in_collision = True
 
-            # while in_collision:
-            #     pos = self.get_random_pos(low_h=self._z_low, z_high=self._z_high)
+                while in_collision:
+                    pos = self.get_random_pos(low_h=self._z_low, z_high=self._z_high)
 
-            #     in_collision = self.is_in_collision(entity=None, pos=pos, rad=0.1)
+                    in_collision = self.is_in_collision(entity=None, pos=pos, rad=0.1)
 
-            # target = Target(pos, self._physics_client_id, g=self.g)
-            # # position must be good if here
-            # self.targets[target.id] = target
-            # uav.target_id = target.id
+                target = Target(pos, self._physics_client_id, g=self.g)
+                # position must be good if here
+                self.targets[target.id] = target
+                uav.target_id = target.id
 
-            target = Target(target_pos[idx], self._physics_client_id, g=self.g)
-            # position must be good if here
-            self.targets[target.id] = target
-            uav.target_id = target.id
+            else:
+                target = Target(self._target_pos[idx], self._physics_client_id, g=self.g)
+                # position must be good if here
+                self.targets[target.id] = target
+                uav.target_id = target.id
 
         # # Reset obstacles, obstacles should not be in collision with target. Obstacles can be in collision with each other.
         # self.obstacles = []

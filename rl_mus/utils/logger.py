@@ -65,7 +65,7 @@ class UavLogger(BaseLogger):
                 prop_cycle=(cycler("color", c) + cycler("linestyle", l)),
             )
 
-        num_rows = 8
+        num_rows = 6
         num_cols = 2
 
         self.fig, self.axs = plt.subplots(
@@ -126,6 +126,7 @@ class UavLogger(BaseLogger):
         row = 5
         self.plot_uav_data(row, col, 15, ylabel="q (rad/s)")
 
+        # TODO: can't get RPMS now without normalizing the observation space first
         # RPMS
         # col = 0
         # row = 6

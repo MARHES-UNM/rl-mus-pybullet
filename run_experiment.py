@@ -56,14 +56,7 @@ def get_obs_act_space(env_config):
     return env_obs_space, env_action_space
 
 
-def get_algo_config(config):
-
-    env_config = config["env_config"]
-
-    env_obs_space, env_action_space = get_obs_act_space(env_config)
-
-    # config["env_config"]["sim_dt"] = tune.grid_search([1/50, 1/10])
-    # config["env_config"]["pybullet_freq"] = tune.grid_search([50, 240])
+def get_algo_config(config, env_obs_space, env_action_space):
 
     algo_config = (
         get_trainable_cls(config["exp_config"]["run"])
@@ -99,16 +92,22 @@ def train(args):
     # args.local_mode = True
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
-    num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["crash_penalty"] = tune.grid_search([0, 10, 1, 50])
+    # we get the spaces here before test vary the experiment treatments (factors)
+    env_obs_space, env_action_space = get_obs_act_space(args.config["env_config"])
 
-    # args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
+    # Vary treatments here
+    num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
+    args.config["env_config"]["num_uavs"] = tune.grid_search([1, 4])
+    args.config["env_config"]["target_pos_rand"] = tune.grid_search([False, True])
+    args.config["env_config"]["crash_penalty"] = tune.grid_search([10])
+    obs_filter = tune.grid_search(["NoFilter", "MeanStdFilter"])
+    # obs_filter=tune.grid_search(["NoFilter", "MeanStdFilter"])
 
     callback_list = [TrainCallback]
     # multi_callbacks = make_multi_callbacks(callback_list)
     # info on common configs: https://docs.ray.io/en/latest/rllib/rllib-training.html#specifying-rollout-workers
     train_config = (
-        get_algo_config(args.config).rollouts(
+        get_algo_config(args.config, env_obs_space, env_action_space).rollouts(
             num_rollout_workers=(
                 1 if args.smoke_test else args.num_rollout_workers
             ),  # set 0 to main worker run sim
@@ -116,7 +115,7 @@ def train(args):
             # create_env_on_local_worker=True,
             # rollout_fragment_length="auto",
             batch_mode="complete_episodes",
-            observation_filter="MeanStdFilter",  # or "NoFilter"
+            observation_filter=obs_filter,  # or "NoFilter"
         )
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
         .resources(
@@ -187,8 +186,6 @@ def train(args):
 
     results = tuner.fit()
 
-    # ray.shutdown()
-
 
 def test(args):
     if args.tune_run:
@@ -227,6 +224,7 @@ def experiment(args):
 
     if algo_to_run == "PPO":
         checkpoint = exp_config["exp_config"].setdefault("checkpoint", None)
+        env_obs_space, env_action_space = get_obs_act_space(env_config)
 
         # Reload the algorithm as is from training.
         if checkpoint is not None:
@@ -240,7 +238,6 @@ def experiment(args):
 
             algo = Policy.from_checkpoint(checkpoint)
 
-            env_obs_space, env_action_space = get_obs_act_space(env_config)
             # # need preprocesor here if using policy
             # # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
             prep = get_preprocessor(env_obs_space)(env_obs_space)
@@ -261,7 +258,7 @@ def experiment(args):
         else:
             use_policy = False
             algo = (
-                get_algo_config(exp_config)
+                get_algo_config(exp_config, env_obs_space, env_action_space)
                 .resources(
                     num_gpus=0,
                     placement_strategy=[{"cpu": 1}, {"cpu": 1}],
@@ -316,7 +313,8 @@ def experiment(args):
                     # c = policy.agent_connectors.connectors[1]
                     c = algo.agent_connectors.connectors[1]
                     actions[idx] = algo.compute_single_action(
-                        c.filter(prep.transform(obs[idx])),  clip_actions=True
+                        c.filter(prep.transform(obs[idx])),
+                        clip_actions=True,
                         # prep.transform(obs[idx]),   clip_actions=True
                     )[0]
                 else:

@@ -55,7 +55,7 @@ DEFAULT_MA = False
 # env_cfg = {"num_uavs": 1, "seed": 123}
 # env_cfg = {"num_uavs": 4, "renders": True}
 # env_cfg = {"num_uavs": 4, "renders": True}
-env_cfg = {"num_uavs": 1, "renders": False, "seed": 123}
+env_cfg = {"num_uavs": 1, "renders": True, "seed": 123}
 from gymnasium import spaces
 
 
@@ -190,92 +190,93 @@ def run(
         output_folder,
         "save-" + datetime.now().strftime("%m.%d.%Y_%H.%M.%S") + "_" + get_git_hash(),
     )
-    if not os.path.exists(filename):
-        os.makedirs(filename + "/")
 
-    train_env = make_vec_env(
-        lambda: RlMusTermWrapper(
-            RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
-        ),
-        # get_env,
-        env_kwargs=dict(),
-        n_envs=16,
-        seed=0,
-    )
+    # if not os.path.exists(filename):
+    #     os.makedirs(filename + "/")
 
-    train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
+    # train_env = make_vec_env(
+    #     lambda: RlMusTermWrapper(
+    #         RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
+    #     ),
+    #     # get_env,
+    #     env_kwargs=dict(),
+    #     n_envs=16,
+    #     seed=0,
+    # )
 
-    eval_env = make_vec_env(
-        lambda: RlMusTermWrapper(
-            RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
-        ),
-        env_kwargs=dict(),
-        n_envs=1,
-        seed=1,
-    )
+    # train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True)
 
-    eval_env = VecNormalize(
-        Monitor(eval_env, None, allow_early_resets=True),
-        norm_obs=True,
-        norm_reward=True,
-    )
+    # eval_env = make_vec_env(
+    #     lambda: RlMusTermWrapper(
+    #         RlMusRewWrapper(RlMusFlatAct(RlMusFlattenObs(RlMus(env_cfg))))
+    #     ),
+    #     env_kwargs=dict(),
+    #     n_envs=1,
+    #     seed=1,
+    # )
 
-    #### Check the environment's spaces ########################
-    print("[INFO] Action space:", train_env.action_space)
-    print("[INFO] Observation space:", train_env.observation_space)
+    # eval_env = VecNormalize(
+    #     Monitor(eval_env, None, allow_early_resets=True),
+    #     norm_obs=True,
+    #     norm_reward=True,
+    # )
 
-    #### Train the model #######################################
-    model = PPO(
-        "MlpPolicy",
-        train_env,
-        # learning_rate=5e-5,
-        # n_steps=65536,
-        # batch_size=4096,
-        # n_epochs=32,
-        tensorboard_log=filename + "/tb/",
-        verbose=1,
-    )
+    # #### Check the environment's spaces ########################
+    # print("[INFO] Action space:", train_env.action_space)
+    # print("[INFO] Observation space:", train_env.observation_space)
 
-    #### Target cumulative rewards (problem-dependent) ##########
-    target_reward = 8000
-    callback_on_best = StopTrainingOnRewardThreshold(
-        reward_threshold=target_reward, verbose=1
-    )
-    eval_callback = EvalCallback(
-        eval_env,
-        callback_on_new_best=callback_on_best,
-        verbose=1,
-        best_model_save_path=filename + "/",
-        log_path=filename + "/",
-        eval_freq=int(1000),
-        # n_eval_episodes=5,
-        deterministic=True,
-        render=False,
-    )
-    model.learn(
-        total_timesteps=(
-            int(1e7) if local else int(1e2)
-        ),  # shorter training in GitHub Actions pytest
-        callback=eval_callback,
-        log_interval=100,
-    )
+    # #### Train the model #######################################
+    # model = PPO(
+    #     "MlpPolicy",
+    #     train_env,
+    #     # learning_rate=5e-5,
+    #     # n_steps=65536,
+    #     # batch_size=4096,
+    #     # n_epochs=32,
+    #     tensorboard_log=filename + "/tb/",
+    #     verbose=1,
+    # )
 
-    #### Save the model ########################################
-    model.save(filename + "/final_model.zip")
-    print(filename)
-    # saving VecNormalize statistics
-    train_env.save(filename + "/vec_normalize.pkl")
+    # #### Target cumulative rewards (problem-dependent) ##########
+    # target_reward = 8000
+    # callback_on_best = StopTrainingOnRewardThreshold(
+    #     reward_threshold=target_reward, verbose=1
+    # )
+    # eval_callback = EvalCallback(
+    #     eval_env,
+    #     callback_on_new_best=callback_on_best,
+    #     verbose=1,
+    #     best_model_save_path=filename + "/",
+    #     log_path=filename + "/",
+    #     eval_freq=int(1000),
+    #     # n_eval_episodes=5,
+    #     deterministic=True,
+    #     render=False,
+    # )
+    # model.learn(
+    #     total_timesteps=(
+    #         int(1e7) if local else int(1e2)
+    #     ),  # shorter training in GitHub Actions pytest
+    #     callback=eval_callback,
+    #     log_interval=100,
+    # )
 
-    #### Print training progression ############################
-    with np.load(filename + "/evaluations.npz") as data:
-        for j in range(data["timesteps"].shape[0]):
-            print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
+    # #### Save the model ########################################
+    # model.save(filename + "/final_model.zip")
+    # print(filename)
+    # # saving VecNormalize statistics
+    # train_env.save(filename + "/vec_normalize.pkl")
 
-    ############################################################
-    ############################################################
-    ############################################################
-    ############################################################
-    ############################################################
+    # #### Print training progression ############################
+    # with np.load(filename + "/evaluations.npz") as data:
+    #     for j in range(data["timesteps"].shape[0]):
+    #         print(str(data["timesteps"][j]) + "," + str(data["results"][j][0]))
+
+    # ############################################################
+    # ############################################################
+    # ############################################################
+    # ############################################################
+    # ############################################################
 
     if local:
         input("Press Enter to continue...")
@@ -285,6 +286,7 @@ def run(
     # filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_23.19.39_1d5a3d3'
     # # filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.27.2024_01.14.02_4f261a6'
     # filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.28.2024_22.19.01_7b15a57'
+    filename = r'/home/prime/Documents/workspace/rl-mus-pybullet/results/save-02.29.2024_18.01.05_0083598'
 
     if os.path.isfile(filename + "/final_model.zip"):
         path = filename + "/final_model.zip"
@@ -350,12 +352,12 @@ def run(
     # env_logger = EnvLogger(num_uavs=1, log_config=log_config)
     # for uav in env.uavs.values():
     # env_logger.add_uav(0)
-    stats_path = filename + "/vec_normalize.pkl"
-    test_env = VecNormalize.load(stats_path, test_env)
-    # #  do not update them at test time
-    test_env.training = False
-    # # reward normalization is not needed at test time
-    test_env.norm_reward = False
+    # stats_path = filename + "/vec_normalize.pkl"
+    # test_env = VecNormalize.load(stats_path, test_env)
+    # # #  do not update them at test time
+    # test_env.training = False
+    # # # reward normalization is not needed at test time
+    # test_env.norm_reward = False
 
     # obs, info = test_env.reset(seed=42, options={})
     # obs, info = test_env.reset()

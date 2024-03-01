@@ -98,7 +98,7 @@ def train(args):
 
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
     args.config["env_config"]["crash_penalty"] = tune.grid_search([0, 10, 1, 50])
-    
+
     # args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
 
     callback_list = [TrainCallback]
@@ -113,7 +113,7 @@ def train(args):
             # create_env_on_local_worker=True,
             # rollout_fragment_length="auto",
             batch_mode="complete_episodes",
-            # observation_filter="MeanStdFilter",  # or "NoFilter"
+            observation_filter="MeanStdFilter",  # or "NoFilter"
         )
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
         .resources(

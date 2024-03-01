@@ -462,25 +462,18 @@ class RlMus(MultiAgentEnv):
         return u_out
 
     def step(self, actions):
-        # print(f"time: {self.time_elapsed}: {actions}")
 
-        # step uavs
         self.alive_agents = set()
-
         rpms = {}
         for uav_id, action in actions.items():
-
-            # # Done uavs don't move
-            # if self.uavs[uav_id].done:
-            #     continue
 
             self.alive_agents.add(uav_id)
 
             if self._use_safe_action:
                 action = self.get_safe_action(self.uavs[uav_id], action)
 
-            # TODO: this may not be needed
-            # action = np.clip(action, self.action_low, self.action_high)
+            # Clipping is needed as the action from the model is not mapped to the action space.        
+            action = np.clip(action, self.action_low, self.action_high)
 
             # target = self.targets[self.uavs[uav_id].target_id]
             # action = self.uavs[uav_id].apf_control(target)

@@ -70,7 +70,10 @@ def get_algo_config(config):
         .get_default_config()
         .environment(env=config["env_name"], env_config=config["env_config"])
         .framework(config["exp_config"]["framework"])
-        .rollouts(num_rollout_workers=0)
+        .rollouts(
+            num_rollout_workers=0,
+            # observation_filter="MeanStdFilter",  # or "NoFilter"
+        )
         .debugging(log_level="ERROR", seed=config["env_config"]["seed"])
         .multi_agent(
             policies={
@@ -214,7 +217,6 @@ def experiment(args):
     env_config = exp_config["env_config"]
     plot_results = exp_config["plot_results"]
     log_config = exp_config["logger_config"]
-    # log_config["log_freq"] = 48
     renders = env_config["renders"]
 
     # get the algorithm or policy to run
@@ -228,7 +230,7 @@ def experiment(args):
 
         # Reload the algorithm as is from training.
         if checkpoint is not None:
-            # can you algorithm from checkpoint instead
+            # Can use algorithm from checkpoint instead
             # algo = Algorithm.from_checkpoint(checkpoint)
             # policy = algo.workers.local_worker().policy_map["shared_policy"]
             use_policy = True
@@ -312,10 +314,10 @@ def experiment(args):
                     # policy_id="shared_policy",  # clip_actions=True
                     # )
                     # c = policy.agent_connectors.connectors[1]
-                    # c = algo.agent_connectors.connectors[1]
+                    c = algo.agent_connectors.connectors[1]
                     actions[idx] = algo.compute_single_action(
-                        # c.filter(prep.transform(obs[idx])),  # clip_actions=True
-                        prep.transform(obs[idx]),  # clip_actions=True
+                        c.filter(prep.transform(obs[idx])),  clip_actions=True
+                        # prep.transform(obs[idx]),   clip_actions=True
                     )[0]
                 else:
                     actions[idx] = algo.compute_single_action(

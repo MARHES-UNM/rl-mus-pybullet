@@ -54,8 +54,8 @@ DEFAULT_MA = False
 
 # env_cfg = {"num_uavs": 1, "seed": 123}
 # env_cfg = {"num_uavs": 4, "renders": True}
-# env_cfg = {"num_uavs": 4, "renders": True}
-env_cfg = {"num_uavs": 1, "renders": True, "seed": 123}
+env_cfg = {"num_uavs": 1, "renders": True}
+# env_cfg = {"num_uavs": 1, "renders": False, "seed": 123}
 from gymnasium import spaces
 
 
@@ -352,12 +352,12 @@ def run(
     # env_logger = EnvLogger(num_uavs=1, log_config=log_config)
     # for uav in env.uavs.values():
     # env_logger.add_uav(0)
-    # stats_path = filename + "/vec_normalize.pkl"
-    # test_env = VecNormalize.load(stats_path, test_env)
-    # # #  do not update them at test time
-    # test_env.training = False
-    # # # reward normalization is not needed at test time
-    # test_env.norm_reward = False
+    stats_path = filename + "/vec_normalize.pkl"
+    test_env = VecNormalize.load(stats_path, test_env)
+    # #  do not update them at test time
+    test_env.training = False
+    # # reward normalization is not needed at test time
+    test_env.norm_reward = False
 
     # obs, info = test_env.reset(seed=42, options={})
     # obs, info = test_env.reset()

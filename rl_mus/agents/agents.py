@@ -1,3 +1,4 @@
+from collections import deque
 import numpy as np
 import os
 
@@ -271,12 +272,17 @@ class Uav(Entity):
         self.integral_rpy_e = np.zeros(3)
 
         self.hover_rpm = np.array([np.sqrt((self.g * self.m) / (4 * self.kf))] * 4)
+
         self.target_id = None
         self.done = False
         self.target_reached = False
         self.crashed = False
         self.truncated = False
         self.terminated = False
+        self.uav_collision = 0.0
+        self.obs_collision = 0.0
+        self.rel_target_dist = 0.0
+        self.rel_target_vel = 0.0
 
         if self.ctrl_type == UavCtrlType.RPM:
             self.num_actions = 4
@@ -290,6 +296,11 @@ class Uav(Entity):
             self.num_actions = 4
             self.action_low = -np.ones(self.num_actions) * self.vel_lim
             self.action_high = np.ones(self.num_actions) * self.vel_lim
+
+        self.action_buffer_size = int(self.ctrl_freq // 2)
+        self.action_buffer = deque(maxlen=self.action_buffer_size)
+        for _ in range(self.action_buffer_size):
+            self.action_buffer.append(np.zeros(self.num_actions))
 
     def compute_control(
         self, pos_des, rpy_des, vel_des=np.zeros(3), ang_vel_des=np.zeros(3)
@@ -474,6 +485,29 @@ class Uav(Entity):
 
         return rpms
 
+    def apf_control(self, target, ka=1):
+        agent_pos = self.pos
+        target_pos = target.pos
+        alpha = 0
+
+        dist_to_target = self.rel_dist(target) + 0.001
+
+        target_star = 1 * (target.rad + self.rad)
+        des_v = np.zeros(4)
+        des_v[3] = self.vel_lim
+
+        if dist_to_target <= target_star:
+            des_v[:3] = np.zeros(3)
+
+        else:
+            des_v[:3] = (
+                -ka
+                * (1 / dist_to_target**alpha)
+                * ((agent_pos - target_pos) / dist_to_target)
+            )
+
+        return des_v
+
     def step(self, action=np.zeros(4), preprocess_action=True):
         if preprocess_action:
             rpms = self.preprocess_action(action)
@@ -509,7 +543,8 @@ class Uav(Entity):
     @property
     def state(self):
         self._state = np.hstack(
-            [self.pos, self.quat, self.rpy, self.vel, self.ang_v, self.rpms]
+            # [self.pos, self.quat, self.rpy, self.vel, self.ang_v, self.rpms]
+            [self.pos, self.quat, self.rpy, self.vel, self.ang_v]
         ).reshape(
             -1,
         )

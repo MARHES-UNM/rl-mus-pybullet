@@ -14,6 +14,9 @@ from ray.tune.registry import get_trainable_cls
 from ray import air, tune
 from rl_mus.utils.callbacks import TrainCallback
 from ray.rllib.algorithms.callbacks import make_multi_callbacks
+from ray.rllib.algorithms.algorithm import Algorithm
+from ray.rllib.utils.policy import local_policy_inference
+
 import ray
 
 import os
@@ -67,7 +70,10 @@ def get_algo_config(config):
         .get_default_config()
         .environment(env=config["env_name"], env_config=config["env_config"])
         .framework(config["exp_config"]["framework"])
-        .rollouts(num_rollout_workers=0)
+        .rollouts(
+            num_rollout_workers=0,
+            # observation_filter="MeanStdFilter",  # or "NoFilter"
+        )
         .debugging(log_level="ERROR", seed=config["env_config"]["seed"])
         .multi_agent(
             policies={
@@ -94,7 +100,8 @@ def train(args):
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    # args.config["env_config"]["beta"] = tune.grid_search([.5, 1, 5, 20])
+    args.config["env_config"]["crash_penalty"] = tune.grid_search([0, 10, 1, 50])
+
     # args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
 
     callback_list = [TrainCallback]
@@ -109,6 +116,7 @@ def train(args):
             # create_env_on_local_worker=True,
             # rollout_fragment_length="auto",
             batch_mode="complete_episodes",
+            observation_filter="MeanStdFilter",  # or "NoFilter"
         )
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
         .resources(
@@ -172,14 +180,14 @@ def train(args):
                 num_to_keep=100,
                 # checkpoint_score_attribute="",
                 checkpoint_at_end=True,
-                checkpoint_frequency=25,
+                checkpoint_frequency=5,
             ),
         ),
     )
 
     results = tuner.fit()
 
-    ray.shutdown()
+    # ray.shutdown()
 
 
 def test(args):
@@ -209,7 +217,6 @@ def experiment(args):
     env_config = exp_config["env_config"]
     plot_results = exp_config["plot_results"]
     log_config = exp_config["logger_config"]
-    # log_config["log_freq"] = 48
     renders = env_config["renders"]
 
     # get the algorithm or policy to run
@@ -223,6 +230,9 @@ def experiment(args):
 
         # Reload the algorithm as is from training.
         if checkpoint is not None:
+            # Can use algorithm from checkpoint instead
+            # algo = Algorithm.from_checkpoint(checkpoint)
+            # policy = algo.workers.local_worker().policy_map["shared_policy"]
             use_policy = True
             # use policy here instead of algorithm because it's more efficient
             from ray.rllib.policy.policy import Policy
@@ -231,11 +241,23 @@ def experiment(args):
             algo = Policy.from_checkpoint(checkpoint)
 
             env_obs_space, env_action_space = get_obs_act_space(env_config)
-            # need preprocesor here if using policy
-            # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
+            # # need preprocesor here if using policy
+            # # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
             prep = get_preprocessor(env_obs_space)(env_obs_space)
 
+            # # https://github.com/ray-project/ray/issues/37974#issuecomment-1766994593
+            # # TODO: look into issue not being able to use meanstdfilter during evaluation
+            # c = list(
+            #     filter(
+            #         lambda x: type(x)
+            #         == ray.rllib.connectors.agent.mean_std_filter.MeanStdObservationFilterAgentConnector,
+            #         # algo.workers.local_worker()
+            #         # .policy_map["shared_policy"]
+            #         algo.agent_connectors.connectors,
+            #     )
+            # )[0]
             env = RlMus(env_config)
+
         else:
             use_policy = False
             algo = (
@@ -272,12 +294,35 @@ def experiment(args):
                 actions[idx] = env.get_time_coord_action(env.uavs[idx])
             elif algo_to_run == "PPO":
                 if use_policy:
-                    actions[idx] = algo.compute_single_action(prep.transform(obs[idx]))[
-                        0
-                    ]
+
+                    # https://github.com/ray-project/ray/issues/41382
+                    # # Use local_policy_inference() to run inference, so we do not have to
+                    # # provide policy states or extra fetch dictionaries.
+                    # # "env_1" and "agent_1" are dummy env and agent IDs to run connectors with.
+                    # policy_outputs = local_policy_inference(
+                    #     policy, "env_1", "agent_1", obs[idx], #explore=False
+                    # )
+                    # assert len(policy_outputs) == 1
+                    # action, _, _ = policy_outputs[0]
+                    # print(f"step {time_step}", obs, action)
+
+                    # actions[idx] = action
+                    # actions[idx] = algo.compute_single_action(
+                    # c.filter(prep.transform(obs[idx])),  # clip_actions=True
+                    # c.filter(obs[idx]),
+                    # obs[idx],
+                    # policy_id="shared_policy",  # clip_actions=True
+                    # )
+                    # c = policy.agent_connectors.connectors[1]
+                    c = algo.agent_connectors.connectors[1]
+                    actions[idx] = algo.compute_single_action(
+                        c.filter(prep.transform(obs[idx])),  clip_actions=True
+                        # prep.transform(obs[idx]),   clip_actions=True
+                    )[0]
                 else:
                     actions[idx] = algo.compute_single_action(
-                        obs[idx], policy_id="shared_policy"
+                        obs[idx],
+                        policy_id="shared_policy",  # clip_actions=True
                     )
 
             if exp_config["exp_config"]["safe_action_type"] is not None:
@@ -305,11 +350,6 @@ def experiment(args):
             logger.info(f"time_elapsed: {env.time_elapsed}")
             env_logger.log_eps_time(sim_time=env.time_elapsed, real_time=end_time)
             num_episodes += 1
-
-            if plot_results:
-                env_logger.plot_env()
-                env_logger.plot(plt_action=True, plt_target=True)
-
             if num_episodes == max_num_episodes:
                 break
 
@@ -322,6 +362,10 @@ def experiment(args):
             done["__all__"] = False
 
         time_step += 1
+
+    if plot_results:
+        env_logger.plot_env()
+        env_logger.plot(plt_action=True, plt_target=True)
 
     env.close()
 
@@ -437,8 +481,9 @@ def main():
         args.log_dir = f"./results/{args.func.__name__}/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}_{num_uavs}u_{num_obs}o/{args.name}"
 
     args.log_dir = Path(args.log_dir).resolve()
-    if not args.log_dir.exists():
-        args.log_dir.mkdir(parents=True, exist_ok=True)
+    # TODO: create log dir when running experiments
+    # if not args.log_dir.exists():
+    #     args.log_dir.mkdir(parents=True, exist_ok=True)
 
     args.func(args)
 

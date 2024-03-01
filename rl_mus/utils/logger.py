@@ -127,17 +127,17 @@ class UavLogger(BaseLogger):
         self.plot_uav_data(row, col, 15, ylabel="q (rad/s)")
 
         # RPMS
-        col = 0
-        row = 6
-        self.plot_uav_data(row, col, 16, ylabel="RPM0")
-        row = 7
-        self.plot_uav_data(row, col, 17, ylabel="RPM1")
+        # col = 0
+        # row = 6
+        # self.plot_uav_data(row, col, 16, ylabel="RPM0")
+        # row = 7
+        # self.plot_uav_data(row, col, 17, ylabel="RPM1")
 
-        col = 1
-        row = 6
-        self.plot_uav_data(row, col, 18, ylabel="RPM2")
-        row = 7
-        self.plot_uav_data(row, col, 19, ylabel="RPM3")
+        # col = 1
+        # row = 6
+        # self.plot_uav_data(row, col, 18, ylabel="RPM2")
+        # row = 7
+        # self.plot_uav_data(row, col, 19, ylabel="RPM3")
 
         if plt_action:
             if self.ctrl_type == UavCtrlType.VEL:
@@ -226,6 +226,7 @@ class EnvLogger(UavLogger):
             data_dictionary[key] = []
         if self._log_reward:
             data_dictionary["reward"] = []
+            data_dictionary["cum_reward"] = []
         data_dictionary["action"] = []
 
         self._data["log"] = [deepcopy(data_dictionary) for i in range(self.num_uavs)]
@@ -251,6 +252,9 @@ class EnvLogger(UavLogger):
 
             if self._log_reward:
                 self.data["log"][array_idx]["reward"].append(reward[uav_id])
+                cum_sum = sum(self.data["log"][array_idx]["reward"])
+                self.data["log"][array_idx]["cum_reward"].append(cum_sum)
+                # if self.data["log"][array_idx]["cum_reward"] is None:
 
             self.data["log"][array_idx]["action"].append(action[uav_id].tolist())
 
@@ -299,6 +303,8 @@ class EnvLogger(UavLogger):
         self.plot_info_data(row, data_type="uav_done_dt", ylabel="done dt")
         row = 2
         self.plot_info_data(row, data_type="reward", ylabel="reward")
+        # TODO: calculate cumulative reward
+        # self.plot_info_data(row, data_type="cum_reward", ylabel="reward")
         # TODO: calculate discounted reward
         row = 3
         self.plot_info_data(row, data_type="uav_collision", ylabel="uav_col")

@@ -70,3 +70,4 @@ https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/
     [RLtools: A Fast, Portable Deep RL Library for Continuous Control](https://arxiv.org/pdf/2306.03530.pdf)
 
     [Deep Learning for Optimization of Trajectories for Quadrotors](https://arxiv.org/abs/2309.15191)
+    [The 37 Implementation Details of Proximal Policy Optimization](https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/)

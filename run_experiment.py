@@ -48,8 +48,8 @@ def get_obs_act_space(env_config):
     renders = env_config["renders"]
     env_config["renders"] = False
     temp_env = RlMus(env_config)
-    env_obs_space = temp_env.observation_space[temp_env.first_uav_id]
-    env_action_space = temp_env.action_space[temp_env.first_uav_id]
+    env_obs_space = temp_env.observation_space[0]
+    env_action_space = temp_env.action_space[0]
     temp_env.close()
     env_config["renders"] = renders
 
@@ -269,8 +269,6 @@ def experiment(args):
             env = algo.workers.local_worker().env
 
     env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
-    for uav in env.uavs.values():
-        env_logger.add_uav(uav.id)
 
     (obs, info), done = env.reset(), {i.id: False for i in env.uavs.values()}
 
@@ -460,11 +458,6 @@ def main():
         args.config = json.load(f)
 
     args.config["env_name"] = args.env_name
-    if not args.config["exp_config"]["run"] == "cc":
-        tune.register_env(
-            args.config["env_name"],
-            lambda env_config: RlMus(env_config=env_config),
-        )
 
     logger.debug(f"config: {args.config}")
 

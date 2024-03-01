@@ -78,6 +78,10 @@ class RlMus(MultiAgentEnv):
         self._target_pos_rand = env_config.setdefault("target_pos_rand", True)
         self._target_pos = env_config.setdefault("target_pos", [[2, 2, 0.5], [1.5, 2, 0.5], [2, 1.5, 0.5], [1.5, 1.5, 0.5]])
 
+        # self._target_pos = env_config.setdefault(
+        #     "target_pos", np.array([[1, 1, 1], [1, -1, 1], [-1, 1, 1], [-1,-1, 1]])*0.5
+        # )
+
         # save the configuration
         self.env_config = env_config
 
@@ -89,7 +93,12 @@ class RlMus(MultiAgentEnv):
         self._time_elapsed = 0.0
         self._sim_step = 0
         self.seed(self._seed)
-        self.reset()
+        self.action_high = 1.0
+        self.action_low = -1.0
+        if self.uav_ctrl_type == UavCtrlType.VEL or self.uav_ctrl_type == UavCtrlType.RPM:
+            self.num_actions = 4
+
+        self._agent_ids = set([uav_id for uav_id in range(self.num_uavs)])
         self.action_space = self._get_action_space()
         self.observation_space = self._get_observation_space()
 
@@ -123,38 +132,33 @@ class RlMus(MultiAgentEnv):
         The uav action consist of acceleration in x, y, and z component."""
         return spaces.Dict(
             {
-                uav.id: spaces.Box(
+                uav_id: spaces.Box(
                     low=self.action_low,
                     high=self.action_high,
                     shape=(self.num_actions,),
                     dtype=np.float32,
                 )
-                for uav in self.uavs.values()
+                for uav_id in range(self.num_uavs)
             }
         )
 
     def _get_observation_space(self):
-        if self.num_obstacles == 0:
-            num_obstacle_shape = 6
-        else:
-            num_obstacle_shape = self.obstacles[0].state.shape[0]
+        """_summary_
 
-        num_uav_state_shape = self.uavs[self.first_uav_id].state.shape
-        action_buffer_size = self.uavs[self.first_uav_id].action_buffer_size
+        Returns:
+            _type_: _description_
+        """
 
         obs_space = spaces.Dict(
             {
-                uav.id: spaces.Dict(
+                uav_id: spaces.Dict(
                     {
                         "state": spaces.Box(
                             low=-np.inf,
                             high=np.inf,
-                            shape=num_uav_state_shape,
+                            shape=(16,),
                             dtype=np.float32,
                         ),
-                        # "done_dt": spaces.Box(
-                        #     low=-np.inf, high=np.inf, shape=(1,), dtype=np.float32
-                        # ),
                         "target": spaces.Box(
                             low=-np.inf,
                             high=np.inf,
@@ -173,43 +177,9 @@ class RlMus(MultiAgentEnv):
                             shape=(1,),
                             dtype=np.float32,
                         ),
-                        # "los_angle": spaces.Box(
-                        #     low=-np.pi,
-                        #     high=np.pi,
-                        #     shape=(1,),
-                        #     dtype=np.float32
-                        # )
-                        # "action_buffer": spaces.Box(
-                        #     low=self.action_low,
-                        #     high=self.action_high,
-                        #     shape=(action_buffer_size, self.num_actions),
-                        #     dtype=np.float32,
-                        # ),
-                        # "constraint": spaces.Box(
-                        #     low=-np.inf,
-                        #     high=np.inf,
-                        #     shape=(self.num_uavs - 1 + self.num_obstacles,),
-                        #     dtype=np.float32,
-                        # ),
-                        # # TODO: need to fix for custom network
-                        # "other_uav_obs": spaces.Box(
-                        #     low=-np.inf,
-                        #     high=np.inf,
-                        #     shape=((self.num_uavs - 1) * num_uav_state_shape[0],),
-                        #     dtype=np.float32,
-                        # ),
-                        # # "obstacles": spaces.Box(
-                        #     low=-np.inf,
-                        #     high=np.inf,
-                        #     shape=(
-                        #         self.num_obstacles,
-                        #         num_obstacle_shape,
-                        #     ),
-                        #     dtype=np.float32,
-                        # ),
                     }
                 )
-                for uav in self.uavs.values()
+                for uav_id in range(self.num_uavs)
             }
         )
 
@@ -474,7 +444,7 @@ class RlMus(MultiAgentEnv):
             if self._use_safe_action:
                 action = self.get_safe_action(self.uavs[uav_id], action)
 
-            # Clipping is needed as the action from the model is not mapped to the action space.        
+            # Clipping is needed as the action from the model is not mapped to the action space.
             action = np.clip(action, self.action_low, self.action_high)
 
             # target = self.targets[self.uavs[uav_id].target_id]
@@ -622,6 +592,14 @@ class RlMus(MultiAgentEnv):
         return obs_dict
 
     def _get_reward(self, uav):
+        """returns reward per UAV in environment
+
+        Args:
+            uav (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
         reward = 0.0
         target = self.targets[uav.target_id]
         t_remaining = self.time_final - self.time_elapsed
@@ -635,16 +613,9 @@ class RlMus(MultiAgentEnv):
             # UAV most have finished last time_step, report zero collisions
             return reward
 
-        # # give penalty for reaching the time limit
-        # if self.time_elapsed >= self.max_time:
-        #     reward -= self._stp_penalty
-        #     uav.done = True
-        #     return reward
-
         uav.done_dt = t_remaining
 
         reward += max(0, 2 - uav.rel_target_dist**4)
-        # reward += -0.3 * uav.rel_target_dist
 
         if uav.rel_target_dist <= 0.15:
             uav.target_reached = True
@@ -653,17 +624,7 @@ class RlMus(MultiAgentEnv):
         if is_reached:
             uav.done = True
             uav.target_reached = True
-            # reward += self._tgt_reward
             uav.terminated = True
-
-            # # get reward for reaching destination in time
-            # if abs(uav.done_dt) < self.t_go_max:
-            #     reward += self._tgt_reward
-
-            # else:
-            #     reward += (
-            #         -(1 - (self.time_elapsed / self.time_final)) * self._stp_penalty
-            #     )
 
             # No need to check for other reward, UAV is done.
             return reward
@@ -680,39 +641,6 @@ class RlMus(MultiAgentEnv):
             uav.crashed = True
             reward += -self._crash_penalty
             return reward
-
-        # if uav.pos[2] <= 0.02:
-        #     # reward += -self._crash_penalty
-        #     uav.truncated = True
-        #     uav.crashed = True
-
-        #     return reward
-
-        # else:
-        #     reward += -self._beta * (
-        #         uav.rel_target_dist
-        #         / np.linalg.norm(
-        #             [2 * self.env_max_l, 2 * self.env_max_w, self.env_max_h]
-        #         )
-        #     )
-
-        # if uav.rel_target_dist >= np.linalg.norm(
-        #     [self.env_max_l, self.env_max_w, self.env_max_h]
-        # ):
-        #     reward += -10
-
-        # reward += (
-        #     -self._beta
-        #     * uav.rel_target_dist
-        #     / np.linalg.norm([self.env_max_l, self.env_max_w, self.env_max_h])
-        # )
-
-        # reward += -uav.rel_target_dist
-
-        # reward += -3 * uav.los_angle(target) / np.pi
-
-        # give small penalty for having large relative velocity
-        # reward += -self._beta * uav.rel_target_vel
 
         # neg reward if uav collides with other uavs
         for other_uav in self.uavs.values():
@@ -808,7 +736,7 @@ class RlMus(MultiAgentEnv):
                     i, 0, physicsClientId=self._physics_client_id
                 )
             p.resetDebugVisualizerCamera(
-                cameraDistance=5,
+                cameraDistance=10,
                 cameraYaw=-15,
                 cameraPitch=-45,
                 cameraTargetPosition=[0, 0, 0],
@@ -832,7 +760,6 @@ class RlMus(MultiAgentEnv):
 
         self._time_elapsed = 0.0
         self._sim_step = 0
-        self._agent_ids = set()
 
         # we need the first uav id for some housekeeping
         self.first_uav_id = None
@@ -861,6 +788,7 @@ class RlMus(MultiAgentEnv):
                 ctrl_type=self.uav_ctrl_type,
                 pyb_freq=self._pyb_freq,
                 ctrl_freq=self._env_freq,
+                id=idx,
             )
             if self.first_uav_id is None:
                 self.first_uav_id = uav.id
@@ -879,13 +807,15 @@ class RlMus(MultiAgentEnv):
 
                     in_collision = self.is_in_collision(entity=None, pos=pos, rad=0.1)
 
-                target = Target(pos, self._physics_client_id, g=self.g)
+                target = Target(pos, self._physics_client_id, g=self.g, id=idx)
                 # position must be good if here
                 self.targets[target.id] = target
                 uav.target_id = target.id
 
             else:
-                target = Target(self._target_pos[idx], self._physics_client_id, g=self.g)
+                target = Target(
+                    self._target_pos[idx], self._physics_client_id, g=self.g, id=idx
+                )
                 # position must be good if here
                 self.targets[target.id] = target
                 uav.target_id = target.id

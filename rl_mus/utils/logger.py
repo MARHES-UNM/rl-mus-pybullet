@@ -16,6 +16,9 @@ class BaseLogger(object):
         self._uav_counter = 0
         self.log_freq = log_freq
 
+        for uav_id in range(self.num_uavs):
+            self.add_uav(uav_id)
+
     def add_uav(self, uav_id):
         self.uav_ids[uav_id] = self._uav_counter
         self._uav_counter += 1

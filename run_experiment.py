@@ -103,7 +103,7 @@ def train(args):
 
     # Vary treatments here
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["num_uavs"] = tune.grid_search([1, 4])
+    args.config["env_config"]["num_uavs"] = tune.grid_search([1])
     # args.config["env_config"]["target_pos_rand"] = tune.grid_search([False])
     args.config["env_config"]["crash_penalty"] = tune.grid_search([5, 10])
     # args.config["env_config"]["use_safe_action"] = tune.grid_search([False])

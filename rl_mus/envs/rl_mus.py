@@ -50,7 +50,7 @@ class RlMus(MultiAgentEnv):
             "d_thresh", 0.0001
         )  # uav.rad + target.rad
         self._tgt_reward = env_config.setdefault("tgt_reward", 200.0)
-        self._crash_penalty = env_config.setdefault("crash_penalty", 200.0)
+        self._crash_penalty = env_config.setdefault("crash_penalty", 10.0)
         self._stp_penalty = env_config.setdefault("stp_penalty", 100.0)
         self._dt_reward = env_config.setdefault("dt_reward", 0.0)
         self._dt_weight = env_config.setdefault("dt_weight", 0.0)
@@ -635,8 +635,8 @@ class RlMus(MultiAgentEnv):
             or abs(uav.rpy[0]) > 0.4
             or abs(uav.rpy[1]) > 0.4
         ):
-            uav.truncated = True
-            uav.done = True
+            # uav.truncated = True
+            # uav.done = True
             uav.crashed = True
             reward += -self._crash_penalty
             return reward

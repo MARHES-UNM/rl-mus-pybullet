@@ -3,6 +3,7 @@ import numpy as np
 from cycler import cycler
 from copy import deepcopy
 from rl_mus.agents.agents import UavCtrlType
+from rl_mus.utils.math_utils import calc_cum_sum
 
 
 class BaseLogger(object):
@@ -256,9 +257,6 @@ class EnvLogger(UavLogger):
 
             if self._log_reward:
                 self.data["log"][array_idx]["reward"].append(reward[uav_id])
-                cum_sum = sum(self.data["log"][array_idx]["reward"])
-                self.data["log"][array_idx]["cum_reward"].append(cum_sum)
-                # if self.data["log"][array_idx]["cum_reward"] is None:
 
             self.data["log"][array_idx]["action"].append(action[uav_id].tolist())
 
@@ -283,7 +281,7 @@ class EnvLogger(UavLogger):
                 prop_cycle=(cycler("color", c) + cycler("linestyle", l)),
             )
 
-        num_rows = 7
+        num_rows = 8
         num_cols = 1
 
         self.fig, self.axs = plt.subplots(
@@ -299,28 +297,31 @@ class EnvLogger(UavLogger):
                     self._data_np["log"][idx][key]
                 )
 
+            self._data_np["log"][idx]["cum_reward"] = calc_cum_sum(self._data_np["log"][idx]['reward'], self._data_np["eps_num"])
+
         self._num_samples = self._data_np["log"][0]["state"].shape[0]
         col = 0
         row = 0
         self.plot_info_data(row, data_type="uav_target_reached", ylabel="tgt reached")
-        row = 1
-        self.plot_info_data(row, data_type="uav_done_dt", ylabel="done dt")
-        row = 2
+        row += 1
         self.plot_info_data(row, data_type="reward", ylabel="reward")
         # TODO: calculate cumulative reward
-        # self.plot_info_data(row, data_type="cum_reward", ylabel="reward")
         # TODO: calculate discounted reward
-        row = 3
+        row += 1 
+        self.plot_info_data(row, data_type="cum_reward", ylabel="cum reward")
+        row += 1
+        self.plot_info_data(row, data_type="uav_done_dt", ylabel="done dt")
+        row += 1
         self.plot_info_data(row, data_type="uav_collision", ylabel="uav_col")
-        row = 4
+        row += 1
         self.plot_info_data(row, data_type="obstacle_collision", ylabel="ncfo_col")
-        row = 5
+        row += 1
         self.plot_info_data(
             row,
             data_type="uav_rel_dist",
             ylabel="$\parallel \Delta \mathbf{r} \parallel$",
         )
-        row = 6
+        row += 1
         self.plot_info_data(
             row,
             data_type="uav_rel_vel",

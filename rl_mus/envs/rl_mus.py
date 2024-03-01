@@ -76,11 +76,9 @@ class RlMus(MultiAgentEnv):
         self._env_freq = env_config.setdefault("env_freq", 30)
         self._sim_dt = 1 / self._env_freq
         self._target_pos_rand = env_config.setdefault("target_pos_rand", True)
-        self._target_pos = env_config.setdefault("target_pos", [[2, 2, 0.5], [1.5, 2, 0.5], [2, 1.5, 0.5], [1.5, 1.5, 0.5]])
-
-        # self._target_pos = env_config.setdefault(
-        #     "target_pos", np.array([[1, 1, 1], [1, -1, 1], [-1, 1, 1], [-1,-1, 1]])*0.5
-        # )
+        self._target_pos = env_config.setdefault(
+            "target_pos", np.array([[1, 1, 1], [1, -1, 1], [-1, 1, 1], [-1,-1, 1]])*0.5
+        )
 
         # save the configuration
         self.env_config = env_config
@@ -679,11 +677,8 @@ class RlMus(MultiAgentEnv):
         if z_high is None:
             z_high = self.env_max_h
 
-        x = np.random.rand() * x_high
-        y = np.random.rand() * y_high
-        # TODO: use the full area
-        # x = np.random.uniform(low=-x_high, high=x_high)
-        # y = np.random.uniform(low=-y_high, high=y_high)
+        x = np.random.uniform(low=-x_high, high=x_high)
+        y = np.random.uniform(low=-y_high, high=y_high)
         z = np.random.uniform(low=low_h, high=z_high)
         return np.array([x, y, z])
 
@@ -736,7 +731,7 @@ class RlMus(MultiAgentEnv):
                     i, 0, physicsClientId=self._physics_client_id
                 )
             p.resetDebugVisualizerCamera(
-                cameraDistance=10,
+                cameraDistance=6,
                 cameraYaw=-15,
                 cameraPitch=-45,
                 cameraTargetPosition=[0, 0, 0],

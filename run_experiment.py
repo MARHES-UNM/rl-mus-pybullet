@@ -105,10 +105,11 @@ def train(args):
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
     args.config["env_config"]["num_uavs"] = tune.grid_search([1, 4])
     # args.config["env_config"]["target_pos_rand"] = tune.grid_search([False])
-    args.config["env_config"]["crash_penalty"] = tune.grid_search([10])
+    args.config["env_config"]["crash_penalty"] = tune.grid_search([5, 10])
     # args.config["env_config"]["use_safe_action"] = tune.grid_search([False])
 
     args.config["env_config"]["tgt_reward"] = 100
+    args.config["env_config"]["time_final"] = tune.grid_search([20, 10])
     args.config["env_config"]["stp_penalty"] = tune.grid_search([5])
     args.config["env_config"]["beta"] = 0.3
     args.config["env_config"]["d_thresh"] = 0.15

@@ -253,7 +253,7 @@ class TestRlMus(unittest.TestCase):
                 "num_uavs": 1,
                 "renders": True,
                 # "pybullet_freq": 240,
-                "env_freq": 48,
+                # "env_freq": 48,
             }
         )
         log_config = {
@@ -273,12 +273,8 @@ class TestRlMus(unittest.TestCase):
 
         env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
 
-        for uav in env.uavs.values():
-            env_logger.add_uav(uav.id)
-
         obs, info = env.reset()
         num_seconds = self.num_med_time
-        # num_seconds = 8
         num_timesteps = num_seconds * env.env_freq
 
         eps_num = 0
@@ -303,7 +299,6 @@ class TestRlMus(unittest.TestCase):
                 )
 
             env.render()
-            # time.sleep(1 / env.env_freq)
 
             if done["__all__"]:
                 obs, info = env.reset()
@@ -326,7 +321,7 @@ class TestRlMus(unittest.TestCase):
                 "renders": True,
                 # "pybullet_freq": 240,
                 # "sim_dt": 1/48
-                "env_freq": 48,
+                "env_freq": 30,
             }
         )
         log_config = {
@@ -346,12 +341,8 @@ class TestRlMus(unittest.TestCase):
 
         env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
 
-        for uav in env.uavs.values():
-            env_logger.add_uav(uav.id)
-
         obs, info = env.reset()
         num_seconds = self.num_med_time
-        num_seconds = 6
         num_timesteps = num_seconds * env.env_freq
 
         eps_num = 0
@@ -363,7 +354,6 @@ class TestRlMus(unittest.TestCase):
                 for uav in env.uavs.values()
             }
             for uav in env.uavs.values():
-                # actions[uav.id][3] = env.uavs[uav.id].vel_lim
                 actions[uav.id][3] = env.action_high
                 des_v = self.apf_uav_controller(uav, env.targets[uav.target_id], ka=100)
                 actions[uav.id][:3] = des_v
@@ -376,18 +366,10 @@ class TestRlMus(unittest.TestCase):
                 )
 
             env.render()
-            # time.sleep(1 / env.env_freq)
 
             if done["__all__"]:
                 obs, info = env.reset()
                 eps_num += 1
-                # env_logger.plot_env()
-                # env_logger.plot(plt_action=True, plt_target=True)
-
-                # env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
-
-                # for uav in env.uavs.values():
-                #     env_logger.add_uav(uav.id)
 
         self.assertEqual(
             env_logger.num_samples, num_timesteps / env.env_freq * env_logger.log_freq

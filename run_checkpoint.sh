@@ -10,6 +10,8 @@ CHECKPOINT="/home/prime/Documents/workspace/rl-mus-pybullet/results/train/PPO/rl
 CHECKPOINT="/home/prime/Documents/workspace/rl-mus-pybullet/results/train/PPO/rl-mus-v0_2024-02-29-22-06_9d2a8e7_1u_0o/crash_penalty/crash_penalty/PPO_rl-mus-v0_ab972_00001_1_crash_penalty=10_2024-02-29_22-06-17/checkpoint_000315/policies/shared_policy"
 CHECKPOINT="/home/prime/Documents/workspace/rl-mus-pybullet/results/train/PPO/rl-mus-v0_2024-03-01-01-08_417bfe8_4u_0o/doe_n_uavs/doe_n_uavs/PPO_rl-mus-v0_19bcd_00002_2_crash_penalty=10,num_uavs=1,target_pos_rand=True,observation_filter=NoFilter_2024-03-01_01-08-19/checkpoint_000452/policies/shared_policy"
 CHECKPOINT="/home/prime/ray_results/train/PPO/rl-mus-v0_2024-03-02-07-51_ea435c5_4u_0o/doe_param_base/doe_param_base/PPO_rl-mus-v0_93bd1_00001_1_crash_penalty=10,d_thresh=0.0001,num_uavs=4,stp_penalty=5,time_final=10_2024-03-02_07-51-24/checkpoint_000080/policies/shared_policy"
+# CHECKPOINT='/home/prime/Documents/workspace/rl-mus-pybullet/ray_results/rl-mus-v0_2024-03-01-22-10_0ad4abc_4u_0o/doe_param_base/doe_param_base/PPO_rl-mus-v0_66aea_00000_0_crash_penalty=10,d_thresh=0.0001,num_uavs=1,stp_penalty=5,time_final=10_2024-03-01_22-10-19/checkpoint_000297/policies/shared_policy'
+CHECKPOINT='/home/prime/Documents/workspace/rl-mus-pybullet/ray_results/rl-mus-v0_2024-03-01-01-08_417bfe8_4u_0o/doe_n_uavs/doe_n_uavs/PPO_rl-mus-v0_19bcd_00002_2_crash_penalty=10,num_uavs=1,target_pos_rand=True,observation_filter=NoFilter_2024-03-01_01-08-19/checkpoint_000452/policies/shared_policy'
 python run_experiment.py \
     test \
-    --checkpoint ${CHECKPOINT} --plot_results --renders --seed "None" "--max_num_episodes" 4
+    --checkpoint ${CHECKPOINT} --plot_results --renders --seed "None" "--max_num_episodes" 1

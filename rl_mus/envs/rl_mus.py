@@ -756,6 +756,7 @@ class RlMus(MultiAgentEnv):
 
         self._time_elapsed = 0.0
         self._sim_step = 0
+        self._agent_ids = set()
 
         # we need the first uav id for some housekeeping
         self.first_uav_id = None
@@ -849,9 +850,9 @@ class RlMus(MultiAgentEnv):
 
         # self.action_high = self.uavs[self.first_uav_id].action_high
         # self.action_low = self.uavs[self.first_uav_id].action_low
-        self.action_high = 1.0
-        self.action_low = -1.0
-        self.num_actions = self.uavs[self.first_uav_id].num_actions
+        # self.action_high = 1.0
+        # self.action_low = -1.0
+        # self.num_actions = self.uavs[self.first_uav_id].num_actions
 
         obs = {uav.id: self._get_obs(uav) for uav in self.uavs.values()}
         # we need to call reward here so that info items will get populated

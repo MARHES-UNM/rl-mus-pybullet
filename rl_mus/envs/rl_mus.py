@@ -635,8 +635,8 @@ class RlMus(MultiAgentEnv):
             or abs(uav.rpy[0]) > 0.4
             or abs(uav.rpy[1]) > 0.4
         ):
-            # uav.truncated = True
-            # uav.done = True
+            uav.truncated = True
+            uav.done = True
             uav.crashed = True
             reward += -self._crash_penalty
             return reward

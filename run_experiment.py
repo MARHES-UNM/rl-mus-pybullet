@@ -25,6 +25,7 @@ import logging
 import json
 
 PATH = Path(__file__).parent.absolute().resolve()
+RESULTS_DIR = Path.home() / 'ray_results'
 logger = logging.getLogger(__name__)
 max_num_cpus = os.cpu_count() - 1
 
@@ -49,7 +50,7 @@ def get_obs_act_space(config):
     env_config = config["env_config"]
     renders = env_config["renders"]
     env_config["renders"] = False
-    if config['env_name'] == 'rl-mus-v0':
+    if config["env_name"] == "rl-mus-v0":
         temp_env = RlMus(env_config)
     else:
         temp_env = RlMusTtc(env_config)
@@ -481,7 +482,8 @@ def main():
         num_uavs = args.config["env_config"]["num_uavs"]
         num_obs = args.config["env_config"]["max_num_obstacles"]
         dir_timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        args.log_dir = f"./results/{args.func.__name__}/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}_{num_uavs}u_{num_obs}o/{args.name}"
+        log_dir = f"{args.func.__name__}/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}_{num_uavs}u_{num_obs}o/{args.name}"
+        args.log_dir = RESULTS_DIR / log_dir
 
     args.log_dir = Path(args.log_dir).resolve()
     # TODO: create log dir when running experiments

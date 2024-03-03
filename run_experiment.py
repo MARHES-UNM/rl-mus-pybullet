@@ -109,12 +109,16 @@ def train(args):
     args.config["env_config"]["crash_penalty"] = tune.grid_search([10])
     # args.config["env_config"]["use_safe_action"] = tune.grid_search([False])
 
-    # args.config["env_config"]["tgt_reward"] = 100
-    # args.config["env_config"]["time_final"] = tune.grid_search([20])
-    # args.config["env_config"]["stp_penalty"] = tune.grid_search([5])
-    # args.config["env_config"]["beta"] = 0.3
-    # args.config["env_config"]["d_thresh"] = tune.grid_search([0.15])
-    # args.config["env_config"]["t_go_max"] = 0.0
+    # args.config["env_config"]["z_high"] = 4
+    # args.config["env_config"]["env_max_h"] = 4
+    # args.config["env_config"]["env_max_l"] = 4
+    # args.config["env_config"]["env_max_w"] = 4
+    args.config["env_config"]["tgt_reward"] = 100
+    args.config["env_config"]["time_final"] = tune.grid_search([20])
+    args.config["env_config"]["stp_penalty"] = tune.grid_search([5])
+    args.config["env_config"]["beta"] = 0.3
+    args.config["env_config"]["d_thresh"] = tune.grid_search([0.15])
+    args.config["env_config"]["t_go_max"] = 2.0
 
     obs_filter = "NoFilter"
     callback_list = [TrainCallback]
@@ -267,7 +271,10 @@ def experiment(args):
             #         algo.agent_connectors.connectors,
             #     )
             # )[0]
-            env = RlMus(env_config)
+            if args.config["env_name"] == "rl-mus-v0":
+                env = RlMus(env_config)
+            else:
+                env = RlMusTtc(env_config)
 
         else:
             use_policy = False

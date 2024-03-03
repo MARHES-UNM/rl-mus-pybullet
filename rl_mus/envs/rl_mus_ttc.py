@@ -171,6 +171,7 @@ class RlMusTtc(RlMus):
             "done_dt": np.array(
                 [self.time_final - self._time_elapsed], dtype=np.float32
             ),
+            # TODO: handle other uavs
             # "other_uav_obs": other_uav_states.reshape(-1).astype(np.float32),
             # TODO: handle obstacles
             # "obstacles": obstacles_to_add.astype(np.float32),

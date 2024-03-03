@@ -25,7 +25,7 @@ import logging
 import json
 
 PATH = Path(__file__).parent.absolute().resolve()
-RESULTS_DIR = Path.home() / 'ray_results'
+RESULTS_DIR = Path.home() / "ray_results"
 logger = logging.getLogger(__name__)
 max_num_cpus = os.cpu_count() - 1
 
@@ -104,9 +104,8 @@ def train(args):
 
     # Vary treatments here
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["num_uavs"] = tune.grid_search([1, 4])
+    args.config["env_config"]["num_uavs"] = tune.grid_search([4])
     # args.config["env_config"]["target_pos_rand"] = tune.grid_search([False])
-    args.config["env_config"]["crash_penalty"] = tune.grid_search([10])
     # args.config["env_config"]["use_safe_action"] = tune.grid_search([False])
 
     # args.config["env_config"]["z_high"] = 4
@@ -116,7 +115,8 @@ def train(args):
     args.config["env_config"]["tgt_reward"] = 100
     args.config["env_config"]["time_final"] = tune.grid_search([20])
     args.config["env_config"]["stp_penalty"] = tune.grid_search([5])
-    args.config["env_config"]["beta"] = 0.3
+    args.config["env_config"]["beta"] = tune.grid_search([0.1, 1, 10])
+    args.config["env_config"]["crash_penalty"] = tune.grid_search([0.1, 10, 50])
     args.config["env_config"]["d_thresh"] = tune.grid_search([0.15])
     args.config["env_config"]["t_go_max"] = 2.0
 
@@ -461,7 +461,7 @@ def parse_arguments():
 
     train_sub.add_argument("--checkpoint", type=str)
     train_sub.add_argument("--cpu", type=int, default=8)
-    train_sub.add_argument("--gpu", type=int, default=0.5)
+    train_sub.add_argument("--gpu", type=int, default=0.50)
     train_sub.add_argument("--num_envs_per_worker", type=int, default=12)
     train_sub.add_argument("--num_rollout_workers", type=int, default=8)
     train_sub.set_defaults(func=train)

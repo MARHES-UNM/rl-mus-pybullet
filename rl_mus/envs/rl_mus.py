@@ -8,6 +8,7 @@ from rl_mus.agents.agents import Target, Uav, UavCtrlType
 import logging
 import random
 from pybullet_utils import bullet_client as bc
+from scipy.integrate import odeint
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 import io
 import pybullet as p2
@@ -237,9 +238,11 @@ class RlMus(MultiAgentEnv):
         tf = self.time_final
         N = self.t_go_n
 
-        des_pos = np.zeros(12)
-        des_pos[0:6] = uav.pad.state[0:6]
-        pos_er = des_pos - uav.state
+        des_pos = np.zeros(6)
+        target = self.targets[uav.target_id]
+        des_pos = np.concatenate([target.pos, target.vel])
+        cur_pos = np.concatenate([uav.pos, uav.vel])
+        pos_er = des_pos - cur_pos
 
         t0 = min(t, tf - 0.1)
         t_go = (tf - t0) ** N

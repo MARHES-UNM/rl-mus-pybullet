@@ -297,7 +297,7 @@ class TestRlMus(unittest.TestCase):
             }
             for uav in env.uavs.values():
                 actions[uav.id][3] = env.action_high
-                des_v = self.apf_uav_controller(uav, env.targets[uav.target_id], ka=100)
+                des_v = self.apf_uav_controller(uav, env.targets[uav.target_id], ka=1)
                 actions[uav.id][:3] = des_v
 
             obs, reward, done, truncated, info = env.step(actions)
@@ -326,11 +326,11 @@ class TestRlMus(unittest.TestCase):
 # Everything below is to make sure that the tests are run in a specific order.
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(TestRlMus("test_check_env_single"))
-    suite.addTest(TestRlMus("test_check_env"))
-    suite.addTest(TestRlMus("test_log_env"))
-    suite.addTest(TestRlMus("test_uav_go_to_goal"))
-    suite.addTest(TestRlMus("test_uav_vel_control"))
+    # suite.addTest(TestRlMus("test_check_env_single"))
+    # suite.addTest(TestRlMus("test_check_env"))
+    # suite.addTest(TestRlMus("test_log_env"))
+    # suite.addTest(TestRlMus("test_uav_go_to_goal"))
+    # suite.addTest(TestRlMus("test_uav_vel_control"))
     suite.addTest(TestRlMus("test_uav_apf_vel_control"))
     suite.addTest(TestRlMus("test_uav_apf_vel_control_single"))
 

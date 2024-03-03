@@ -7,8 +7,9 @@ from rl_mus.utils.math_utils import calc_cum_sum
 
 
 class BaseLogger(object):
-    def __init__(self, num_uavs=1, log_freq=10) -> None:
+    def __init__(self, num_uavs=1, log_freq=10, logger_name="") -> None:
         self.num_uavs = num_uavs
+        self.logger_name = logger_name
 
         # used for converting the uav_id to array index
         self.uav_ids = {}
@@ -37,10 +38,10 @@ class BaseLogger(object):
 
 
 class UavLogger(BaseLogger):
-    def __init__(self, num_uavs=1, log_freq=240, ctrl_type=UavCtrlType.VEL) -> None:
+    def __init__(self, num_uavs=1, log_freq=240, ctrl_type=UavCtrlType.VEL, logger_name="") -> None:
         self.ctrl_type = ctrl_type
 
-        super().__init__(num_uavs=num_uavs, log_freq=log_freq)
+        super().__init__(num_uavs=num_uavs, log_freq=log_freq, logger_name=logger_name)
 
         # used for converting the uav_id to array index
         self._data = {}
@@ -58,6 +59,8 @@ class UavLogger(BaseLogger):
         return self._num_samples
 
     def plot(self, title="", plt_action=False, plt_target=False):
+        title = self.logger_name + title
+
         if self.num_uavs > 1 and self.num_uavs <= 4:
             colors = ["r", "g", "b", "y"]
             linestyle = ["-", "--", ":", "-."]
@@ -207,9 +210,10 @@ class EnvLogger(UavLogger):
         log_freq = self._log_config.setdefault("log_freq", 10)
         uav_ctrl_type = self._log_config.setdefault("uav_ctrl_type", UavCtrlType.VEL)
         self._env_freq = self._log_config["env_freq"]
+        logger_name=self._log_config.setdefault("logger_name", "")
         self._log_step = -1
 
-        super().__init__(num_uavs=num_uavs, log_freq=log_freq, ctrl_type=uav_ctrl_type)
+        super().__init__(num_uavs=num_uavs, log_freq=log_freq, ctrl_type=uav_ctrl_type, logger_name=logger_name)
 
         self._log_step_skip = int(self._env_freq / self.log_freq)
         self.parse_log_config()
@@ -270,6 +274,7 @@ class EnvLogger(UavLogger):
         return len(self.data["eps_num"])
 
     def plot_env(self, title=""):
+        title = self.logger_name + title
 
         if self.num_uavs > 1 and self.num_uavs <= 4:
             colors = ["r", "g", "b", "y"]

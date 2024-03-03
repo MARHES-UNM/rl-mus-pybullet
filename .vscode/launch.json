@@ -5,6 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "test_rl_mus_ttc",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${cwd}/tests/test_rl_mus_ttc.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "args": [
+                "-v",
+                "--failfast"
+            ]
+        },
+        {
             "name": "run_experiment--train",
             "type": "python",
             "request": "launch",
@@ -33,8 +47,9 @@
                 // "--checkpoint", 
                 // "/home/prime/Documents/workspace/rl-mus-pybullet/results/train/PPO/rl-mus-v0_2024-02-27-18-32_ec9b0dc_1u_0o/norm_obs/norm_obs/PPO_rl-mus-v0_84814_00000_0_2024-02-27_18-32-48/checkpoint_000453/policies/shared_policy",
                 "--renders",
-                "--plot_results", 
-                "--seed", "None"
+                "--plot_results",
+                "--seed",
+                "None"
             ],
         },
         {
@@ -45,8 +60,7 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "cwd": "${workspaceFolder}",
-            "env": {
-            },
+            "env": {},
             "args": [
                 "-v",
                 "--failfast"

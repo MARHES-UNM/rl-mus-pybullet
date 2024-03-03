@@ -94,8 +94,9 @@ class RlMus(MultiAgentEnv):
         self.seed(self._seed)
         self.action_high = 1.0
         self.action_low = -1.0
-        if self.uav_ctrl_type == UavCtrlType.VEL or self.uav_ctrl_type == UavCtrlType.RPM:
+        if self.uav_ctrl_type == UavCtrlType.VEL or self.uav_ctrl_type == UavCtrlType.RPM or self.uav_ctrl_type == UavCtrlType.POS:
             self.num_actions = 4
+        
 
         self._agent_ids = set([uav_id for uav_id in range(self.num_uavs)])
         self.action_space = self._get_action_space()

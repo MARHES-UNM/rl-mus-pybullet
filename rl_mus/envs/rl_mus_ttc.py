@@ -17,20 +17,20 @@ class RlMusTtc(RlMus):
         uav.uav_collision = 0.0
         uav.obs_collision = 0.0
 
-        target = self.targets[uav.target_id]
-        uav.rel_target_dist = uav.rel_dist(target)
-        uav.rel_target_vel = uav.rel_vel(target)
-
         if uav.done:
             # UAV most have finished last time_step, report zero collisions
             return reward
 
+        # give penalty for reaching the time limit
         elif self.time_elapsed >= self.max_time:
             reward -= self._stp_penalty
             return reward
 
         uav.done_dt = t_remaining
 
+        target = self.targets[uav.target_id]
+        uav.rel_target_dist = uav.rel_dist(target)
+        uav.rel_target_vel = uav.rel_vel(target)
         is_reached = uav.rel_target_dist <= self._d_thresh
 
         # pos reward if uav reaches target
@@ -51,18 +51,24 @@ class RlMusTtc(RlMus):
             # No need to check for other reward, UAV is done.
             return reward
 
-        if (
-            abs(uav.pos[0]) > self.env_max_l + 0.1
-            or abs(uav.pos[1]) > self.env_max_w + 0.1
-            or uav.pos[2] > self.env_max_h + 0.1
-            or abs(uav.rpy[0]) > 0.4
-            or abs(uav.rpy[1]) > 0.4
+        elif uav.rel_target_dist >= np.linalg.norm(
+            [2*self.env_max_w, 2*self.env_max_l, self.env_max_h]
         ):
-            # uav.truncated = True
-            # uav.done = True
             uav.crashed = True
             reward += -self._crash_penalty
-            return reward
+
+        # elif (
+        #     abs(uav.pos[0]) > self.env_max_l + 0.1
+        #     or abs(uav.pos[1]) > self.env_max_w + 0.1
+        #     or uav.pos[2] > self.env_max_h + 0.1
+        #     or abs(uav.rpy[0]) > 0.4
+        #     or abs(uav.rpy[1]) > 0.4
+        # ):
+        #     # uav.truncated = True
+        #     # uav.done = True
+        #     uav.crashed = True
+        #     reward += -self._crash_penalty
+        #     return reward
         else:
             reward -= self._beta * (
                 uav.rel_target_dist

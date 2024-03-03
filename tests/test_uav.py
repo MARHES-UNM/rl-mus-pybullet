@@ -72,7 +72,6 @@ class TestUav(unittest.TestCase):
         )
 
         plotter = UavLogger(ctrl_type=UavCtrlType.RPM)
-        plotter.add_uav(self.uav.id)
 
         rpms_des = np.zeros(4)
 
@@ -92,7 +91,6 @@ class TestUav(unittest.TestCase):
         )
 
         plotter = UavLogger(ctrl_type=UavCtrlType.VEL)
-        plotter.add_uav(self.uav.id)
 
         vel_des = np.zeros(4)
         n_steps = int(self.n_secs_short * self.uav.pyb_freq)
@@ -111,7 +109,6 @@ class TestUav(unittest.TestCase):
         )
 
         plotter = UavLogger()
-        plotter.add_uav(self.uav.id)
 
         vel_des = np.zeros(4)
         vel_des[3] = self.uav.vel_lim
@@ -157,7 +154,6 @@ class TestUav(unittest.TestCase):
         )
 
         plotter = UavLogger()
-        plotter.add_uav(self.uav.id)
 
         time_to_change_vel = 0.1 * 240  # every 2 secs
         vel_des = np.zeros(4)
@@ -183,7 +179,6 @@ class TestUav(unittest.TestCase):
         )
 
         plotter = UavLogger()
-        plotter.add_uav(self.uav.id)
 
         time_to_change_vel = int(240 / 0.5)  # every 2 secs
         vel_des = np.zeros(4)
@@ -211,7 +206,6 @@ class TestUav(unittest.TestCase):
         )
 
         plotter = UavLogger(ctrl_type=UavCtrlType.POS)
-        plotter.add_uav(self.uav.id)
         action = np.zeros(4)
 
         # this determines how fast to complete a circle
@@ -237,9 +231,9 @@ class TestUav(unittest.TestCase):
         )
 
         plotter = UavLogger(ctrl_type=UavCtrlType.VEL)
-        plotter.add_uav(self.uav.id)
         action = np.zeros(4)
         action[3] = self.uav.vel_lim
+
         # this determines how fast to complete a circle
         circ_freq = 1.0 / (240.0 * 2.0) * 2.0 * np.pi  # hz
         circ_rad = 0.9 * 100

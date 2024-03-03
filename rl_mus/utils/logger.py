@@ -167,19 +167,20 @@ class UavLogger(BaseLogger):
                     row, col, 3, data_type="action", ylabel="$\psi$ (rad)"
                 )
 
-            elif self.ctrl_type == UavCtrlType.RPM:
-                # RPMS
-                col = 0
-                row = 6
-                self.plot_uav_data(row, col, 0, data_type="action", ylabel="RPM0")
-                row = 7
-                self.plot_uav_data(row, col, 1, data_type="action", ylabel="RPM1")
+            # TODO: Fix plotting RPMs
+            # elif self.ctrl_type == UavCtrlType.RPM:
+            #     # RPMS
+            #     col = 0
+            #     row = 6
+            #     self.plot_uav_data(row, col, 0, data_type="action", ylabel="RPM0")
+            #     row = 7
+            #     self.plot_uav_data(row, col, 1, data_type="action", ylabel="RPM1")
 
-                col = 1
-                row = 6
-                self.plot_uav_data(row, col, 2, data_type="action", ylabel="RPM2")
-                row = 7
-                self.plot_uav_data(row, col, 3, data_type="action", ylabel="RPM3")
+            #     col = 1
+            #     row = 6
+            #     self.plot_uav_data(row, col, 2, data_type="action", ylabel="RPM2")
+            #     row = 7
+            #     self.plot_uav_data(row, col, 3, data_type="action", ylabel="RPM3")
 
         for row in range(num_rows):
             for col in range(num_cols):

@@ -112,14 +112,14 @@ def train(args):
     # args.config["env_config"]["env_max_h"] = 4
     # args.config["env_config"]["env_max_l"] = 4
     # args.config["env_config"]["env_max_w"] = 4
-    args.config["env_config"]["tgt_reward"] = tune.grid_search([100])
-    args.config["env_config"]["stp_penalty"] = tune.grid_search([0.0, 0.01, 0.1])
+    args.config["env_config"]["tgt_reward"] = tune.grid_search([300, 100])
+    args.config["env_config"]["stp_penalty"] = tune.grid_search([0.1, 0.01, 0.0])
     args.config["env_config"]["d_thresh"] = tune.grid_search([0.15])
     args.config["env_config"]["time_final"] = tune.grid_search([8])
     args.config["env_config"]["t_go_max"] = tune.grid_search([2.0])
 
     # args.config["env_config"]["beta"] = tune.grid_search([0.03, 0.3, 10])
-    args.config["env_config"]["beta"] = tune.grid_search([0.01, 0.0, 0.1])
+    args.config["env_config"]["beta"] = tune.grid_search([0.1, 0.01])
     args.config["env_config"]["beta_vel"] = tune.grid_search([0.0])
     args.config["env_config"]["crash_penalty"] = tune.grid_search([0.1])
 

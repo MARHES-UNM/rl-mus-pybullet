@@ -44,12 +44,13 @@ class RlMusTtc(RlMus):
                 reward += self._tgt_reward
 
             else:
-                # reward += (
-                #     -(1 - (self.time_elapsed / self.time_final)) * self._stp_penalty
-                # )
-                reward = self._tgt_reward * min(
-                    self._time_elapsed / self.time_final, 1.0
+                reward += (
+                    -(1 - (self.time_elapsed / self.time_final)) * self._stp_penalty
                 )
+
+                # reward = self._tgt_reward * min(
+                    # self._time_elapsed / self.time_final, 1.0
+                # )
 
             # No need to check for other reward, UAV is done.
             return reward

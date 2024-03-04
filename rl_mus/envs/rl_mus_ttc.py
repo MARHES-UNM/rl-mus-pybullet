@@ -22,7 +22,7 @@ class RlMusTtc(RlMus):
             return reward
 
         # give penalty for reaching the time limit
-        elif self.time_elapsed >= self.max_time:
+        elif self._time_elapsed > self.max_time:
             reward -= self._stp_penalty
             return reward
 
@@ -44,15 +44,18 @@ class RlMusTtc(RlMus):
                 reward += self._tgt_reward
 
             else:
-                reward += (
-                    -(1 - (self.time_elapsed / self.time_final)) * self._stp_penalty
+                # reward += (
+                #     -(1 - (self.time_elapsed / self.time_final)) * self._stp_penalty
+                # )
+                reward = self._tgt_reward * min(
+                    self._time_elapsed / self.time_final, 1.0
                 )
 
             # No need to check for other reward, UAV is done.
             return reward
 
         elif uav.rel_target_dist >= np.linalg.norm(
-            [2*self.env_max_w, 2*self.env_max_l, self.env_max_h]
+            [2 * self.env_max_w, 2 * self.env_max_l, self.env_max_h]
         ):
             uav.crashed = True
             reward += -self._crash_penalty
@@ -77,7 +80,7 @@ class RlMusTtc(RlMus):
                 )
             )
 
-        # reward += -self._beta * uav.rel_target_vel
+        reward += -self._beta_vel * uav.rel_target_vel
 
         # neg reward if uav collides with other uavs
         for other_uav in self.uavs.values():
@@ -181,7 +184,6 @@ class RlMusTtc(RlMus):
             # "other_uav_obs": other_uav_states.reshape(-1).astype(np.float32),
             # TODO: handle obstacles
             # "obstacles": obstacles_to_add.astype(np.float32),
-
             # TODO: handle constraints
             # "constraint": self._get_uav_constraint(uav).astype(np.float32),
         }

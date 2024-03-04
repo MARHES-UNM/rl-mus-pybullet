@@ -47,6 +47,7 @@ class RlMus(MultiAgentEnv):
         self.t_go_max = env_config.setdefault("t_go_max", 0.0)
         self.t_go_n = env_config.setdefault("t_go_n", 1.0)
         self._beta = env_config.setdefault("beta", 1.0)
+        self._beta_vel = env_config.setdefault("beta_vel", 1.0)
         self._d_thresh = env_config.setdefault(
             "d_thresh", 0.0001
         )  # uav.rad + target.rad
@@ -507,7 +508,7 @@ class RlMus(MultiAgentEnv):
         # fake_done = {self.uavs[id].id: False for id in self.alive_agents}
         real_done = {self.uavs[id].id: self.uavs[id].done for id in self.alive_agents}
         real_done["__all__"] = (
-            all(v for v in real_done.values()) or self._time_elapsed >= self.max_time
+            all(v for v in real_done.values()) or self._time_elapsed > self.max_time
         )
         terminated = {
             self.uavs[uav_id].id: self.uavs[uav_id].terminated
@@ -606,7 +607,7 @@ class RlMus(MultiAgentEnv):
         """
         reward = 0.0
         target = self.targets[uav.target_id]
-        t_remaining = self.time_final - self.time_elapsed
+        t_remaining = self.time_final - self._time_elapsed
         uav.uav_collision = 0.0
         uav.obs_collision = 0.0
         uav.rel_target_dist = uav.rel_dist(target)

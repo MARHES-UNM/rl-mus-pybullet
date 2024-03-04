@@ -40,7 +40,7 @@ class RlMusTtc(RlMus):
             uav.terminated = True
 
             # get reward for reaching destination in time
-            if abs(uav.done_dt) < self.t_go_max:
+            if abs(uav.done_dt) <= self.t_go_max:
                 reward += self._tgt_reward
 
             else:

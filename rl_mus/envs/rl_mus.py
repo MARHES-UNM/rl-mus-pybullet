@@ -233,6 +233,7 @@ class RlMus(MultiAgentEnv):
         b += np.linalg.norm(del_v) ** 2
         return b
 
+    # TODO: there seems to be a small bias in z direction
     def get_time_coord_action(self, uav):
         t = self.time_elapsed
         tf = self.time_final
@@ -244,7 +245,7 @@ class RlMus(MultiAgentEnv):
         cur_pos = np.concatenate([uav.pos, uav.vel])
         pos_er = des_pos - cur_pos
 
-        t0 = min(t, tf - 0.1)
+        t0 = min(t, tf - (self._sim_dt))
         t_go = (tf - t0) ** N
         p = self.get_p_mat(tf, N, t0)
         B = np.zeros((2, 1))
@@ -329,7 +330,7 @@ class RlMus(MultiAgentEnv):
 
         Q = np.eye(2) * 0.0
 
-        t = np.arange(tf, t0, -0.1)
+        t = np.arange(tf, t0, -self._sim_dt)
         params = (tf, N, A, B, Q)
 
         g0 = np.array([*Qf.reshape((4,))])

@@ -113,13 +113,14 @@ def train(args):
     # args.config["env_config"]["env_max_l"] = 4
     # args.config["env_config"]["env_max_w"] = 4
     args.config["env_config"]["tgt_reward"] = tune.grid_search([100])
-    args.config["env_config"]["stp_penalty"] = tune.grid_search([5])
+    args.config["env_config"]["stp_penalty"] = tune.grid_search([.1, 1, 10])
     args.config["env_config"]["d_thresh"] = tune.grid_search([0.15])
     args.config["env_config"]["time_final"] = tune.grid_search([8])
     args.config["env_config"]["t_go_max"] = tune.grid_search([2.0])
 
-    args.config["env_config"]["beta"] = tune.grid_search([0.03, 0.3, 10])
-    args.config["env_config"]["crash_penalty"] = tune.grid_search([10, 0.1, 50])
+    # args.config["env_config"]["beta"] = tune.grid_search([0.03, 0.3, 10])
+    args.config["env_config"]["beta"] = tune.grid_search([0.03])
+    args.config["env_config"]["crash_penalty"] = tune.grid_search([0.1])
 
     obs_filter = "NoFilter"
     callback_list = [TrainCallback]

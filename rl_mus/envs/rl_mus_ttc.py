@@ -77,7 +77,7 @@ class RlMusTtc(RlMus):
                 )
             )
 
-        reward += -self._beta * uav.rel_target_vel
+        # reward += -self._beta * uav.rel_target_vel
 
         # neg reward if uav collides with other uavs
         for other_uav in self.uavs.values():

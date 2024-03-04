@@ -53,7 +53,7 @@ class TestRlMus(unittest.TestCase):
     def test_time_coordinated_control(self):
         env = RlMusTtc(
             env_config={
-                "num_uavs": 1,
+                "num_uavs": 2,
                 "renders": True,
                 "env_freq": 30,
                 "time_final": self.num_med_time,

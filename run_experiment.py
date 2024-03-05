@@ -104,14 +104,10 @@ def train(args):
 
     # Vary treatments here
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["num_uavs"] = tune.grid_search([1, 4])
-    args.config["env_config"]["target_pos_rand"] = tune.grid_search([False, True])
+    args.config["env_config"]["num_uavs"] = tune.grid_search([4])
+    args.config["env_config"]["target_pos_rand"] = tune.grid_search([True])
     # args.config["env_config"]["use_safe_action"] = tune.grid_search([False])
 
-    # args.config["env_config"]["z_high"] = 4
-    # args.config["env_config"]["env_max_h"] = 4
-    # args.config["env_config"]["env_max_l"] = 4
-    # args.config["env_config"]["env_max_w"] = 4
     args.config["env_config"]["tgt_reward"] = tune.grid_search([10])
     args.config["env_config"]["stp_penalty"] = tune.grid_search([0.1])
     args.config["env_config"]["d_thresh"] = tune.grid_search([0.15])
@@ -435,7 +431,7 @@ def parse_arguments():
     test_sub.add_argument("--max_num_episodes", type=int, default=1)
     test_sub.add_argument("--experiment_num", type=int, default=0)
     test_sub.add_argument("--renders", action="store_true", default=False)
-    test_sub.add_argument("--write_exp", action="store_true")
+    test_sub.add_argument("--write_exp", action="store_true", default=False)
     test_sub.add_argument("--plot_results", action="store_true", default=False)
     test_sub.add_argument("--tune_run", action="store_true", default=False)
     test_sub.add_argument("--seed")

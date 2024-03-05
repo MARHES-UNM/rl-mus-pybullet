@@ -27,6 +27,8 @@
             "justMyCode": false,
             "cwd": "${workspaceFolder}",
             "args": [
+                "--env_name",
+                "rl-mus-ttc-v0",
                 "train",
                 "--smoke_test",
             ],

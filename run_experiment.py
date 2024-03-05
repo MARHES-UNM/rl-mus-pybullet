@@ -104,8 +104,8 @@ def train(args):
 
     # Vary treatments here
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["num_uavs"] = tune.grid_search([1])
-    # args.config["env_config"]["target_pos_rand"] = tune.grid_search([False])
+    args.config["env_config"]["num_uavs"] = tune.grid_search([1, 4])
+    args.config["env_config"]["target_pos_rand"] = tune.grid_search([False, True])
     # args.config["env_config"]["use_safe_action"] = tune.grid_search([False])
 
     # args.config["env_config"]["z_high"] = 4
@@ -113,12 +113,11 @@ def train(args):
     # args.config["env_config"]["env_max_l"] = 4
     # args.config["env_config"]["env_max_w"] = 4
     args.config["env_config"]["tgt_reward"] = tune.grid_search([10])
-    args.config["env_config"]["stp_penalty"] = tune.grid_search([5, .1])
+    args.config["env_config"]["stp_penalty"] = tune.grid_search([0.1])
     args.config["env_config"]["d_thresh"] = tune.grid_search([0.15])
     args.config["env_config"]["time_final"] = tune.grid_search([8])
     args.config["env_config"]["t_go_max"] = tune.grid_search([2.0])
 
-    # args.config["env_config"]["beta"] = tune.grid_search([0.03, 0.3, 10])
     args.config["env_config"]["beta"] = tune.grid_search([0.3])
     args.config["env_config"]["beta_vel"] = tune.grid_search([0.0])
     args.config["env_config"]["crash_penalty"] = tune.grid_search([1.0])

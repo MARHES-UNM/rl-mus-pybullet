@@ -130,12 +130,12 @@ class RlMusTtc(RlMus):
                             dtype=np.float32,
                         ),
                         # TODO: need to fix for custom network
-                        # "other_uav_obs": spaces.Box(
-                        #     low=-np.inf,
-                        #     high=np.inf,
-                        #     shape=((self.num_uavs - 1) * num_uav_state_shape,),
-                        #     dtype=np.float32,
-                        # ),
+                        "other_uav_obs": spaces.Box(
+                            low=-np.inf,
+                            high=np.inf,
+                            shape=((self.num_uavs - 1) * num_uav_state_shape,),
+                            dtype=np.float32,
+                        ),
                         # "obstacles": spaces.Box(
                         #     low=-np.inf,
                         #     high=np.inf,
@@ -181,7 +181,7 @@ class RlMusTtc(RlMus):
                 [self.time_final - self._time_elapsed], dtype=np.float32
             ),
             # TODO: handle other uavs
-            # "other_uav_obs": other_uav_states.reshape(-1).astype(np.float32),
+            "other_uav_obs": other_uav_states.reshape(-1).astype(np.float32),
             # TODO: handle obstacles
             # "obstacles": obstacles_to_add.astype(np.float32),
             # TODO: handle constraints

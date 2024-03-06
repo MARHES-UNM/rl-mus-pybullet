@@ -48,14 +48,16 @@ class Entity:
         _type=AgentType.O,
         rad=0.1,
         show_local_axis=False,
+        id=0,
     ):
         self.client = client
         self.type = _type
         self.urdf = urdf
         self.rad = rad
         self.show_local_axis = show_local_axis
+        self.id = id
 
-        self.id = p.loadURDF(
+        self.p_id = p.loadURDF(
             self.urdf,
             init_xyz,
             p.getQuaternionFromEuler(init_rpy),
@@ -70,10 +72,10 @@ class Entity:
 
     def _get_kinematic(self):
         self.pos, self.quat = p.getBasePositionAndOrientation(
-            self.id, physicsClientId=self.client
+            self.p_id, physicsClientId=self.client
         )
         self.rpy = np.array(p.getEulerFromQuaternion(self.quat))
-        self.vel, self.ang_v = p.getBaseVelocity(self.id, physicsClientId=self.client)
+        self.vel, self.ang_v = p.getBaseVelocity(self.p_id, physicsClientId=self.client)
 
         self.pos = np.array(self.pos)
         self.quat = np.array(self.quat)
@@ -92,7 +94,7 @@ class Entity:
             lineFromXYZ=[0, 0, 0],
             lineToXYZ=[axis_length, 0, 0],
             lineColorRGB=[1, 0, 0],
-            parentObjectUniqueId=self.id,
+            parentObjectUniqueId=self.p_id,
             parentLinkIndex=-1,
             replaceItemUniqueId=-1,
             physicsClientId=self.client,
@@ -101,7 +103,7 @@ class Entity:
             lineFromXYZ=[0, 0, 0],
             lineToXYZ=[0, axis_length, 0],
             lineColorRGB=[0, 1, 0],
-            parentObjectUniqueId=self.id,
+            parentObjectUniqueId=self.p_id,
             parentLinkIndex=-1,
             replaceItemUniqueId=-1,
             physicsClientId=self.client,
@@ -110,11 +112,15 @@ class Entity:
             lineFromXYZ=[0, 0, 0],
             lineToXYZ=[0, 0, axis_length],
             lineColorRGB=[0, 0, 1],
-            parentObjectUniqueId=self.id,
+            parentObjectUniqueId=self.p_id,
             parentLinkIndex=-1,
             replaceItemUniqueId=-1,
             physicsClientId=self.client,
         )
+
+    @property
+    def state(self):
+        return self._state
 
     def step(self):
         raise NotImplemented()
@@ -141,19 +147,16 @@ class Entity:
     def rel_vel(self, entity):
         return np.linalg.norm(self.vel - entity.vel)
 
+    # TODO: validate this function
     def los_angle(self, entity):
         return np.arccos(
             np.dot(self.vel, (self.pos - entity.pos))
             / (np.linalg.norm(self.vel) * self.rel_dist(entity))
         )
 
-    @property
-    def state(self):
-        return self._state
-
 
 class Target(Entity):
-    def __init__(self, init_xyz, client, g=9.81, rad=0.1, show_local_axis=False):
+    def __init__(self, init_xyz, client, g=9.81, rad=0.1, show_local_axis=False, id=0):
         init_rpy = [0, 0, 0]
         _type = AgentType.T
         urdf = os.path.join(ASSET_PATH, "sphere.urdf")
@@ -166,9 +169,10 @@ class Target(Entity):
             _type=_type,
             rad=rad,
             show_local_axis=show_local_axis,
+            id=id,
         )
 
-    def step(action=np.zeros(3)):
+    def step(self, action=np.zeros(3)):
         pass
 
 
@@ -185,6 +189,7 @@ class Uav(Entity):
         ctrl_conf=UavCtrlConf.X,
         pyb_freq=240.0,
         ctrl_freq=240.0,
+        id=0,
     ):
         self.ctrl_conf = ctrl_conf
         self.ctrl_type = ctrl_type
@@ -214,6 +219,7 @@ class Uav(Entity):
             _type,
             rad=self.arm,
             show_local_axis=show_local_axis,
+            id=id,
         )
 
         self.m = 0.027
@@ -523,7 +529,7 @@ class Uav(Entity):
 
         for i in range(4):
             p.applyExternalForce(
-                self.id,
+                self.p_id,
                 i,
                 forceObj=[0, 0, forces[i]],
                 posObj=[0, 0, 0],
@@ -531,7 +537,7 @@ class Uav(Entity):
                 physicsClientId=self.client,
             )
         p.applyExternalTorque(
-            self.id,
+            self.p_id,
             4,
             torqueObj=[0, 0, z_torque],
             flags=p.LINK_FRAME,

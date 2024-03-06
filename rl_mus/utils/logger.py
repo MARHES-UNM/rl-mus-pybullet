@@ -3,11 +3,13 @@ import numpy as np
 from cycler import cycler
 from copy import deepcopy
 from rl_mus.agents.agents import UavCtrlType
+from rl_mus.utils.math_utils import calc_cum_sum
 
 
 class BaseLogger(object):
-    def __init__(self, num_uavs=1, log_freq=10) -> None:
+    def __init__(self, num_uavs=1, log_freq=10, logger_name="") -> None:
         self.num_uavs = num_uavs
+        self.logger_name = logger_name
 
         # used for converting the uav_id to array index
         self.uav_ids = {}
@@ -15,6 +17,9 @@ class BaseLogger(object):
         self._num_samples = 0
         self._uav_counter = 0
         self.log_freq = log_freq
+
+        for uav_id in range(self.num_uavs):
+            self.add_uav(uav_id)
 
     def add_uav(self, uav_id):
         self.uav_ids[uav_id] = self._uav_counter
@@ -33,10 +38,10 @@ class BaseLogger(object):
 
 
 class UavLogger(BaseLogger):
-    def __init__(self, num_uavs=1, log_freq=240, ctrl_type=UavCtrlType.VEL) -> None:
+    def __init__(self, num_uavs=1, log_freq=240, ctrl_type=UavCtrlType.VEL, logger_name="") -> None:
         self.ctrl_type = ctrl_type
 
-        super().__init__(num_uavs=num_uavs, log_freq=log_freq)
+        super().__init__(num_uavs=num_uavs, log_freq=log_freq, logger_name=logger_name)
 
         # used for converting the uav_id to array index
         self._data = {}
@@ -54,6 +59,8 @@ class UavLogger(BaseLogger):
         return self._num_samples
 
     def plot(self, title="", plt_action=False, plt_target=False):
+        title = self.logger_name + title
+
         if self.num_uavs > 1 and self.num_uavs <= 4:
             colors = ["r", "g", "b", "y"]
             linestyle = ["-", "--", ":", "-."]
@@ -65,7 +72,7 @@ class UavLogger(BaseLogger):
                 prop_cycle=(cycler("color", c) + cycler("linestyle", l)),
             )
 
-        num_rows = 8
+        num_rows = 6
         num_cols = 2
 
         self.fig, self.axs = plt.subplots(
@@ -126,6 +133,7 @@ class UavLogger(BaseLogger):
         row = 5
         self.plot_uav_data(row, col, 15, ylabel="q (rad/s)")
 
+        # TODO: can't get RPMS now without normalizing the observation space first
         # RPMS
         # col = 0
         # row = 6
@@ -162,19 +170,20 @@ class UavLogger(BaseLogger):
                     row, col, 3, data_type="action", ylabel="$\psi$ (rad)"
                 )
 
-            elif self.ctrl_type == UavCtrlType.RPM:
-                # RPMS
-                col = 0
-                row = 6
-                self.plot_uav_data(row, col, 0, data_type="action", ylabel="RPM0")
-                row = 7
-                self.plot_uav_data(row, col, 1, data_type="action", ylabel="RPM1")
+            # TODO: Fix plotting RPMs
+            # elif self.ctrl_type == UavCtrlType.RPM:
+            #     # RPMS
+            #     col = 0
+            #     row = 6
+            #     self.plot_uav_data(row, col, 0, data_type="action", ylabel="RPM0")
+            #     row = 7
+            #     self.plot_uav_data(row, col, 1, data_type="action", ylabel="RPM1")
 
-                col = 1
-                row = 6
-                self.plot_uav_data(row, col, 2, data_type="action", ylabel="RPM2")
-                row = 7
-                self.plot_uav_data(row, col, 3, data_type="action", ylabel="RPM3")
+            #     col = 1
+            #     row = 6
+            #     self.plot_uav_data(row, col, 2, data_type="action", ylabel="RPM2")
+            #     row = 7
+            #     self.plot_uav_data(row, col, 3, data_type="action", ylabel="RPM3")
 
         for row in range(num_rows):
             for col in range(num_cols):
@@ -201,9 +210,10 @@ class EnvLogger(UavLogger):
         log_freq = self._log_config.setdefault("log_freq", 10)
         uav_ctrl_type = self._log_config.setdefault("uav_ctrl_type", UavCtrlType.VEL)
         self._env_freq = self._log_config["env_freq"]
+        logger_name=self._log_config.setdefault("logger_name", "")
         self._log_step = -1
 
-        super().__init__(num_uavs=num_uavs, log_freq=log_freq, ctrl_type=uav_ctrl_type)
+        super().__init__(num_uavs=num_uavs, log_freq=log_freq, ctrl_type=uav_ctrl_type, logger_name=logger_name)
 
         self._log_step_skip = int(self._env_freq / self.log_freq)
         self.parse_log_config()
@@ -252,9 +262,6 @@ class EnvLogger(UavLogger):
 
             if self._log_reward:
                 self.data["log"][array_idx]["reward"].append(reward[uav_id])
-                cum_sum = sum(self.data["log"][array_idx]["reward"])
-                self.data["log"][array_idx]["cum_reward"].append(cum_sum)
-                # if self.data["log"][array_idx]["cum_reward"] is None:
 
             self.data["log"][array_idx]["action"].append(action[uav_id].tolist())
 
@@ -267,6 +274,7 @@ class EnvLogger(UavLogger):
         return len(self.data["eps_num"])
 
     def plot_env(self, title=""):
+        title = self.logger_name + title
 
         if self.num_uavs > 1 and self.num_uavs <= 4:
             colors = ["r", "g", "b", "y"]
@@ -279,7 +287,7 @@ class EnvLogger(UavLogger):
                 prop_cycle=(cycler("color", c) + cycler("linestyle", l)),
             )
 
-        num_rows = 7
+        num_rows = 8
         num_cols = 1
 
         self.fig, self.axs = plt.subplots(
@@ -295,28 +303,31 @@ class EnvLogger(UavLogger):
                     self._data_np["log"][idx][key]
                 )
 
+            self._data_np["log"][idx]["cum_reward"] = calc_cum_sum(self._data_np["log"][idx]['reward'], self._data_np["eps_num"])
+
         self._num_samples = self._data_np["log"][0]["state"].shape[0]
         col = 0
         row = 0
         self.plot_info_data(row, data_type="uav_target_reached", ylabel="tgt reached")
-        row = 1
-        self.plot_info_data(row, data_type="uav_done_dt", ylabel="done dt")
-        row = 2
+        row += 1
         self.plot_info_data(row, data_type="reward", ylabel="reward")
         # TODO: calculate cumulative reward
-        # self.plot_info_data(row, data_type="cum_reward", ylabel="reward")
         # TODO: calculate discounted reward
-        row = 3
+        row += 1 
+        self.plot_info_data(row, data_type="cum_reward", ylabel="cum reward")
+        row += 1
+        self.plot_info_data(row, data_type="uav_done_dt", ylabel="done dt")
+        row += 1
         self.plot_info_data(row, data_type="uav_collision", ylabel="uav_col")
-        row = 4
+        row += 1
         self.plot_info_data(row, data_type="obstacle_collision", ylabel="ncfo_col")
-        row = 5
+        row += 1
         self.plot_info_data(
             row,
             data_type="uav_rel_dist",
             ylabel="$\parallel \Delta \mathbf{r} \parallel$",
         )
-        row = 6
+        row += 1
         self.plot_info_data(
             row,
             data_type="uav_rel_vel",

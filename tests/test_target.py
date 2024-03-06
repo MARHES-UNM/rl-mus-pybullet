@@ -41,26 +41,16 @@ class TestPlotter(unittest.TestCase):
 
         target = Target(start_pos, client=self.client)
 
-        # p.changeVisualShape(target.id, -1, rgbaColor=[0.5, 0.25])
-
         self.uav = Uav(
             [1,1,2], [0, 0, 0], client=self.client, ctrl_type=UavCtrlType.POS, show_local_axis=True
         )
-        # p.changeVisualShape(self.uav.id, -1, rgbaColor=[0.8, 0.6, 0.4, 1])
-
-        # plotter = Plotter(ctrl_type=UavCtrlType.POS)
-        # plotter.add_uav(self.uav.id)
         pos_des = np.zeros(4)
 
         for i in range(10 * 240):
             pos_des[:3] = target.pos
             self.uav.step(pos_des)
             p.stepSimulation()
-            # time.sleep(1 / 240)
 
-            # plotter.log(self.uav.id, self.uav.state, pos_des)
-
-        # plotter.plot("Test UAV reaching target", plt_ctrl=True)
 
 if __name__ == "__main__":
     unittest.main()

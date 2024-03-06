@@ -8,6 +8,7 @@ from rl_mus.envs.rl_mus import RlMus
 from pathlib import Path
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
+from rl_mus.envs.rl_mus_ttc import RlMusTtc
 from rl_mus.utils.env_utils import get_git_hash
 from rl_mus.utils.logger import EnvLogger
 from ray.tune.registry import get_trainable_cls
@@ -24,6 +25,7 @@ import logging
 import json
 
 PATH = Path(__file__).parent.absolute().resolve()
+RESULTS_DIR = Path.home() / "ray_results"
 logger = logging.getLogger(__name__)
 max_num_cpus = os.cpu_count() - 1
 
@@ -42,28 +44,26 @@ def setup_stream(logging_level=logging.DEBUG):
     logger.setLevel(logging_level)
 
 
-def get_obs_act_space(env_config):
+def get_obs_act_space(config):
 
     # Need to create a temporary environment to get obs and action space
+    env_config = config["env_config"]
     renders = env_config["renders"]
     env_config["renders"] = False
-    temp_env = RlMus(env_config)
-    env_obs_space = temp_env.observation_space[temp_env.first_uav_id]
-    env_action_space = temp_env.action_space[temp_env.first_uav_id]
+    if config["env_name"] == "rl-mus-v0":
+        temp_env = RlMus(env_config)
+    else:
+        temp_env = RlMusTtc(env_config)
+
+    env_obs_space = temp_env.observation_space[0]
+    env_action_space = temp_env.action_space[0]
     temp_env.close()
     env_config["renders"] = renders
 
     return env_obs_space, env_action_space
 
 
-def get_algo_config(config):
-
-    env_config = config["env_config"]
-
-    env_obs_space, env_action_space = get_obs_act_space(env_config)
-
-    # config["env_config"]["sim_dt"] = tune.grid_search([1/50, 1/10])
-    # config["env_config"]["pybullet_freq"] = tune.grid_search([50, 240])
+def get_algo_config(config, env_obs_space, env_action_space):
 
     algo_config = (
         get_trainable_cls(config["exp_config"]["run"])
@@ -99,16 +99,32 @@ def train(args):
     # args.local_mode = True
     ray.init(local_mode=args.local_mode, num_gpus=1)
 
+    # We get the spaces here before test vary the experiment treatments (factors)
+    env_obs_space, env_action_space = get_obs_act_space(args.config)
+
+    # Vary treatments here
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
-    args.config["env_config"]["crash_penalty"] = tune.grid_search([0, 10, 1, 50])
+    args.config["env_config"]["num_uavs"] = tune.grid_search([4])
+    args.config["env_config"]["target_pos_rand"] = tune.grid_search([True])
+    # args.config["env_config"]["use_safe_action"] = tune.grid_search([False])
 
-    # args.config["env_config"]["crash_penalty"] = tune.grid_search([200, 500])
+    args.config["env_config"]["tgt_reward"] = tune.grid_search([10])
+    args.config["env_config"]["stp_penalty"] = tune.grid_search([0.1])
+    args.config["env_config"]["d_thresh"] = tune.grid_search([0.15])
+    args.config["env_config"]["time_final"] = tune.grid_search([8])
+    args.config["env_config"]["t_go_max"] = tune.grid_search([2.0])
 
+    args.config["env_config"]["beta"] = tune.grid_search([0.3])
+    args.config["env_config"]["beta_vel"] = tune.grid_search([0.0])
+    args.config["env_config"]["crash_penalty"] = tune.grid_search([1.0])
+    
+    args.config["env_config"]["uav_collision_weight"] = tune.grid_search([0.01, 0.1, 1, 10])
+    obs_filter = "NoFilter"
     callback_list = [TrainCallback]
     # multi_callbacks = make_multi_callbacks(callback_list)
-    # info on common configs: https://docs.ray.io/en/latest/rllib/rllib-training.html#specifying-rollout-workers
+    # Common config params: https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms
     train_config = (
-        get_algo_config(args.config).rollouts(
+        get_algo_config(args.config, env_obs_space, env_action_space).rollouts(
             num_rollout_workers=(
                 1 if args.smoke_test else args.num_rollout_workers
             ),  # set 0 to main worker run sim
@@ -116,7 +132,7 @@ def train(args):
             # create_env_on_local_worker=True,
             # rollout_fragment_length="auto",
             batch_mode="complete_episodes",
-            observation_filter="MeanStdFilter",  # or "NoFilter"
+            observation_filter=obs_filter,  # or "NoFilter"
         )
         # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
         .resources(
@@ -187,8 +203,6 @@ def train(args):
 
     results = tuner.fit()
 
-    # ray.shutdown()
-
 
 def test(args):
     if args.tune_run:
@@ -227,6 +241,7 @@ def experiment(args):
 
     if algo_to_run == "PPO":
         checkpoint = exp_config["exp_config"].setdefault("checkpoint", None)
+        env_obs_space, env_action_space = get_obs_act_space(args.config)
 
         # Reload the algorithm as is from training.
         if checkpoint is not None:
@@ -240,7 +255,6 @@ def experiment(args):
 
             algo = Policy.from_checkpoint(checkpoint)
 
-            env_obs_space, env_action_space = get_obs_act_space(env_config)
             # # need preprocesor here if using policy
             # # https://docs.ray.io/en/releases-2.6.3/rllib/rllib-training.html
             prep = get_preprocessor(env_obs_space)(env_obs_space)
@@ -256,12 +270,15 @@ def experiment(args):
             #         algo.agent_connectors.connectors,
             #     )
             # )[0]
-            env = RlMus(env_config)
+            if args.config["env_name"] == "rl-mus-v0":
+                env = RlMus(env_config)
+            else:
+                env = RlMusTtc(env_config)
 
         else:
             use_policy = False
             algo = (
-                get_algo_config(exp_config)
+                get_algo_config(exp_config, env_obs_space, env_action_space)
                 .resources(
                     num_gpus=0,
                     placement_strategy=[{"cpu": 1}, {"cpu": 1}],
@@ -273,8 +290,6 @@ def experiment(args):
             env = algo.workers.local_worker().env
 
     env_logger = EnvLogger(num_uavs=env.num_uavs, log_config=log_config)
-    for uav in env.uavs.values():
-        env_logger.add_uav(uav.id)
 
     (obs, info), done = env.reset(), {i.id: False for i in env.uavs.values()}
 
@@ -316,13 +331,13 @@ def experiment(args):
                     # c = policy.agent_connectors.connectors[1]
                     c = algo.agent_connectors.connectors[1]
                     actions[idx] = algo.compute_single_action(
-                        c.filter(prep.transform(obs[idx])),  clip_actions=True
-                        # prep.transform(obs[idx]),   clip_actions=True
+                        # c.filter(prep.transform(obs[idx])),
+                        prep.transform(obs[idx]),
+                        clip_actions=True,
                     )[0]
                 else:
                     actions[idx] = algo.compute_single_action(
-                        obs[idx],
-                        policy_id="shared_policy",  # clip_actions=True
+                        obs[idx], policy_id="shared_policy", clip_actions=True
                     )
 
             if exp_config["exp_config"]["safe_action_type"] is not None:
@@ -417,7 +432,7 @@ def parse_arguments():
     test_sub.add_argument("--max_num_episodes", type=int, default=1)
     test_sub.add_argument("--experiment_num", type=int, default=0)
     test_sub.add_argument("--renders", action="store_true", default=False)
-    test_sub.add_argument("--write_exp", action="store_true")
+    test_sub.add_argument("--write_exp", action="store_true", default=False)
     test_sub.add_argument("--plot_results", action="store_true", default=False)
     test_sub.add_argument("--tune_run", action="store_true", default=False)
     test_sub.add_argument("--seed")
@@ -445,7 +460,7 @@ def parse_arguments():
 
     train_sub.add_argument("--checkpoint", type=str)
     train_sub.add_argument("--cpu", type=int, default=8)
-    train_sub.add_argument("--gpu", type=int, default=0.5)
+    train_sub.add_argument("--gpu", type=int, default=0.50)
     train_sub.add_argument("--num_envs_per_worker", type=int, default=12)
     train_sub.add_argument("--num_rollout_workers", type=int, default=8)
     train_sub.set_defaults(func=train)
@@ -464,11 +479,6 @@ def main():
         args.config = json.load(f)
 
     args.config["env_name"] = args.env_name
-    if not args.config["exp_config"]["run"] == "cc":
-        tune.register_env(
-            args.config["env_name"],
-            lambda env_config: RlMus(env_config=env_config),
-        )
 
     logger.debug(f"config: {args.config}")
 
@@ -478,7 +488,8 @@ def main():
         num_uavs = args.config["env_config"]["num_uavs"]
         num_obs = args.config["env_config"]["max_num_obstacles"]
         dir_timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M")
-        args.log_dir = f"./results/{args.func.__name__}/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}_{num_uavs}u_{num_obs}o/{args.name}"
+        log_dir = f"{args.func.__name__}/{args.run}/{args.env_name}_{dir_timestamp}_{branch_hash}_{num_uavs}u_{num_obs}o/{args.name}"
+        args.log_dir = RESULTS_DIR / log_dir
 
     args.log_dir = Path(args.log_dir).resolve()
     # TODO: create log dir when running experiments

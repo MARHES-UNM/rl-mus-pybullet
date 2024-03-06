@@ -14,7 +14,7 @@ CHECKPOINT="/home/prime/ray_results/train/PPO/rl-mus-v0_2024-03-02-07-51_ea435c5
 CHECKPOINT='/home/prime/Documents/workspace/rl-mus-pybullet/ray_results/rl-mus-v0_2024-03-01-01-08_417bfe8_4u_0o/doe_n_uavs/doe_n_uavs/PPO_rl-mus-v0_19bcd_00002_2_crash_penalty=10,num_uavs=1,target_pos_rand=True,observation_filter=NoFilter_2024-03-01_01-08-19/checkpoint_000452/policies/shared_policy'
 CHECKPOINT="/home/prime/Documents/workspace/rl-mus-pybullet/ray_results/train/PPO/rl-mus-v0_2024-03-02-13-21_5103c92_1u_0o/rlmus_baseline/rlmus_baseline/PPO_rl-mus-v0_c2560_00000_0_crash_penalty=10,num_uavs=1_2024-03-02_13-21-59/checkpoint_000302/policies/shared_policy" 
 CHECKPOINT="/home/prime/Documents/workspace/rl-mus-pybullet/ray_results/train/PPO/rl-mus-ttc-v0_2024-03-03-00-37_5103c92_1u_0o/ttc_baseline/ttc_baseline/PPO_rl-mus-ttc-v0_1a5d0_00000_0_crash_penalty=10,d_thresh=0.1500,num_uavs=1,stp_penalty=5,time_final=20_2024-03-03_00-37-19/checkpoint_000295/policies/shared_policy"
-CHECKPOINT="/home/prime/Documents/workspace/rl-mus-pybullet/ray_results/train/PPO/rl-mus-ttc-v0_2024-03-04-06-09_b7d2ac5_1u_0o/only_tune_stp_pen/only_tune_stp_pen/PPO_rl-mus-ttc-v0_a50a9_00000_0_beta=0.3000,beta_vel=0.0000,crash_penalty=0.1000,d_thresh=0.1500,num_uavs=1,stp_penalty=0,t_go_max_2024-03-04_06-09-18/checkpoint_000304/policies/shared_policy"
+CHECKPOINT="/home/prime/Documents/workspace/rl-mus-pybullet/ray_results/train/PPO/rl-mus-ttc-v0_2024-03-05-17-27_a120051_4u_0o/n_uavs_params_train/n_uavs_params_train/PPO_rl-mus-ttc-v0_9669b_00000_0_beta=0.3000,beta_vel=0.0000,crash_penalty=1.0000,d_thresh=0.1500,num_uavs=4,stp_penalty=0.1000,t_g_2024-03-05_17-27-44/checkpoint_000210/policies/shared_policy"
 
 python run_experiment.py \
     --env_name rl-mus-ttc-v0 \

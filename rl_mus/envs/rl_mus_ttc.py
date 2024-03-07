@@ -54,24 +54,21 @@ class RlMusTtc(RlMus):
             # No need to check for other reward, UAV is done.
             return reward
 
-        elif uav.rel_target_dist >= np.linalg.norm(
-            [2 * self.env_max_w, 2 * self.env_max_l, self.env_max_h]
+        # elif uav.rel_target_dist >= np.linalg.norm(
+        #     [2 * self.env_max_w, 2 * self.env_max_l, self.env_max_h]
+        # ):
+        #     uav.crashed = True
+        #     reward += -self._crash_penalty
+
+        elif (
+            abs(uav.pos[0]) > self.env_max_l + 0.1
+            or abs(uav.pos[1]) > self.env_max_w + 0.1
+            or uav.pos[2] > self.env_max_h + 0.1
+            or abs(uav.rpy[0]) > 0.5
+            or abs(uav.rpy[1]) > 0.5
         ):
             uav.crashed = True
             reward += -self._crash_penalty
-
-        # elif (
-        #     abs(uav.pos[0]) > self.env_max_l + 0.1
-        #     or abs(uav.pos[1]) > self.env_max_w + 0.1
-        #     or uav.pos[2] > self.env_max_h + 0.1
-        #     or abs(uav.rpy[0]) > 0.4
-        #     or abs(uav.rpy[1]) > 0.4
-        # ):
-        #     # uav.truncated = True
-        #     # uav.done = True
-        #     uav.crashed = True
-        #     reward += -self._crash_penalty
-        #     return reward
         else:
             reward -= self._beta * (
                 uav.rel_target_dist

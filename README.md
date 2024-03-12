@@ -71,3 +71,8 @@ https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/
 
     [Deep Learning for Optimization of Trajectories for Quadrotors](https://arxiv.org/abs/2309.15191)
     [The 37 Implementation Details of Proximal Policy Optimization](https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/)
+
+
+capture screen
+https://trac.ffmpeg.org/wiki/Capture/Desktop
+ffmpeg -video_size 1360x768 -framerate 25 -f x11grab -i :0.0 output.mp4

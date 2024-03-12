@@ -105,20 +105,20 @@ def train(args):
     # Vary treatments here
     num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", args.gpu))
     args.config["env_config"]["num_uavs"] = tune.grid_search([4])
-    args.config["env_config"]["target_pos_rand"] = tune.grid_search([True])
+    args.config["env_config"]["d_thresh"] = tune.grid_search([0.1, 0.01])
+    args.config["env_config"]["target_pos_rand"] = True
     # args.config["env_config"]["use_safe_action"] = tune.grid_search([False])
 
-    args.config["env_config"]["tgt_reward"] = tune.grid_search([10])
-    args.config["env_config"]["stp_penalty"] = tune.grid_search([0.1])
-    args.config["env_config"]["d_thresh"] = tune.grid_search([0.15])
-    args.config["env_config"]["time_final"] = tune.grid_search([8])
-    args.config["env_config"]["t_go_max"] = tune.grid_search([2.0])
+    args.config["env_config"]["tgt_reward"] = 10
+    args.config["env_config"]["stp_penalty"] = 0.1
+    args.config["env_config"]["time_final"] = 8
+    args.config["env_config"]["t_go_max"] = 2.0
 
-    args.config["env_config"]["beta"] = tune.grid_search([0.3])
-    args.config["env_config"]["beta_vel"] = tune.grid_search([0.0])
-    args.config["env_config"]["crash_penalty"] = tune.grid_search([1.0])
-    
-    args.config["env_config"]["uav_collision_weight"] = tune.grid_search([0.01, 0.1, 1, 10])
+    args.config["env_config"]["beta"] = 0.3
+    args.config["env_config"]["beta_vel"] = 0.0
+    args.config["env_config"]["crash_penalty"] = 1.0
+    args.config["env_config"]["uav_collision_weight"] = 0.0
+
     obs_filter = "NoFilter"
     callback_list = [TrainCallback]
     # multi_callbacks = make_multi_callbacks(callback_list)
@@ -239,6 +239,11 @@ def experiment(args):
         print("Unrecognized algorithm. Exiting...")
         exit(99)
 
+    if args.config["env_name"] == "rl-mus-v0":
+        env = RlMus(env_config)
+    else:
+        env = RlMusTtc(env_config)
+
     if algo_to_run == "PPO":
         checkpoint = exp_config["exp_config"].setdefault("checkpoint", None)
         env_obs_space, env_action_space = get_obs_act_space(args.config)
@@ -270,13 +275,9 @@ def experiment(args):
             #         algo.agent_connectors.connectors,
             #     )
             # )[0]
-            if args.config["env_name"] == "rl-mus-v0":
-                env = RlMus(env_config)
-            else:
-                env = RlMusTtc(env_config)
-
         else:
             use_policy = False
+            env.close()
             algo = (
                 get_algo_config(exp_config, env_obs_space, env_action_space)
                 .resources(
@@ -304,9 +305,16 @@ def experiment(args):
         actions = {}
         for uav in env.uavs.values():
             idx = uav.id
+            # TODO: fix this controller implementation here
             # classic control
             if algo_to_run == "cc":
-                actions[idx] = env.get_time_coord_action(env.uavs[idx])
+                action = np.zeros(4)
+                acc  = env.get_time_coord_action(env.uavs[idx])
+                cur_vel = env.uavs[idx].vel
+
+                action[:3] = cur_vel + env.sim_dt * acc
+                action[3] = np.linalg.norm(action[:3])
+                actions[idx] = action
             elif algo_to_run == "PPO":
                 if use_policy:
 
